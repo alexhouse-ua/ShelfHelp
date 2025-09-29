@@ -1,0 +1,95 @@
+{
+  "bot": {
+    "username": "shelf_help_assistant_bot",
+    "name": "Shelf Help Assistant",
+    "description": "Your personal reading companion! I help you discover, track, and get insights from your books. Add books to your shelf, get personalized recommendations, and reflect on your reading journey.",
+    "about": "📚 Shelf Help Assistant\n\nTransform your reading experience with personalized book management, intelligent recommendations, and meaningful reading insights.\n\nFeatures:\n• Personal book shelf management\n• Smart reading recommendations\n• Post-reading reflection guidance\n• Reading progress tracking\n• Book discovery assistance\n\nStart your reading journey with /start"
+  },
+  "commands": [
+    {
+      "command": "start",
+      "description": "Welcome and introduction"
+    },
+    {
+      "command": "help",
+      "description": "Available commands and features"
+    },
+    {
+      "command": "addbook",
+      "description": "Add a new book to your shelf"
+    },
+    {
+      "command": "mybooks",
+      "description": "View your book collection"
+    },
+    {
+      "command": "recommend",
+      "description": "Get book recommendations"
+    },
+    {
+      "command": "reading",
+      "description": "Currently reading books"
+    },
+    {
+      "command": "finished",
+      "description": "Mark book as finished"
+    },
+    {
+      "command": "reflect",
+      "description": "Start post-reading reflection"
+    },
+    {
+      "command": "insights",
+      "description": "View your reading insights"
+    },
+    {
+      "command": "status",
+      "description": "Your reading statistics"
+    },
+    {
+      "command": "settings",
+      "description": "Configure preferences"
+    }
+  ],
+  "webhook": {
+    "allowed_updates": [
+      "message",
+      "callback_query",
+      "inline_query"
+    ],
+    "timeout": 60,
+    "drop_pending_updates": true
+  },
+  "features": {
+    "inline_mode": {
+      "enabled": true,
+      "placeholder": "Search books..."
+    },
+    "privacy": {
+      "groups": false,
+      "description": "Bot only works in private chats for personalized reading assistance"
+    },
+    "web_app": {
+      "enabled": false,
+      "url": null,
+      "description": "Web app integration planned for future releases"
+    }
+  },
+  "rate_limiting": {
+    "messages_per_minute": 30,
+    "commands_per_minute": 10,
+    "inline_queries_per_minute": 20
+  },
+  "environment": {
+    "development": {
+      "debug": true,
+      "log_level": "debug",
+      "webhook_url": "https://your-ngrok-url.ngrok.io/webhook"
+    },
+    "production": {
+      "debug": false,
+      "log_level": "info",
+      "webhook_url": "https://your-supabase-project.functions.supabase.co/v1/telegram-webhook"
+    }
+  }
+}
