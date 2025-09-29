@@ -1,0 +1,796 @@
+Genres:
+  - Genre: Fantasy
+    Subgenre: Alternate History
+  - Genre: Fantasy
+    Subgenre: Arcanepunk
+  - Genre: Fantasy
+    Subgenre: Arthurian Fantasy
+  - Genre: Fantasy
+    Subgenre: Castle Fantasy
+  - Genre: Fantasy
+    Subgenre: Christian Fantasy
+  - Genre: Fantasy
+    Subgenre: Comic / Humorous Fantasy
+  - Genre: Fantasy
+    Subgenre: Dark Fantasy
+  - Genre: Fantasy
+    Subgenre: Fairy-Tale Retellings
+  - Genre: Fantasy
+    Subgenre: Fantasy of Manners
+  - Genre: Fantasy
+    Subgenre: Gaslamp Fantasy
+  - Genre: Fantasy
+    Subgenre: Grimdark
+  - Genre: Fantasy
+    Subgenre: High / Epic Fantasy
+  - Genre: Fantasy
+    Subgenre: Historical Fantasy
+  - Genre: Fantasy
+    Subgenre: Isekai / Portal Fantasy
+  - Genre: Fantasy
+    Subgenre: Low / Mundane Fantasy
+  - Genre: Fantasy
+    Subgenre: Mythic / Mythopoeia / Mythpunk
+  - Genre: Fantasy
+    Subgenre: Paranormal Fantasy
+  - Genre: Fantasy
+    Subgenre: Sword & Sorcery
+  - Genre: Fantasy
+    Subgenre: Urban Fantasy
+  - Genre: Fantasy
+    Subgenre: Wuxia
+  - Genre: Fantasy
+    Subgenre: Young Adult Fantasy
+  - Genre: Science Fiction
+    Subgenre: AI / Robotics
+  - Genre: Science Fiction
+    Subgenre: Alternate History
+  - Genre: Science Fiction
+    Subgenre: Apocalyptic
+  - Genre: Science Fiction
+    Subgenre: Biopunk
+  - Genre: Science Fiction
+    Subgenre: Climate Fiction (Cli‑Fi)
+  - Genre: Science Fiction
+    Subgenre: Dieselpunk
+  - Genre: Science Fiction
+    Subgenre: First Contact
+  - Genre: Science Fiction
+    Subgenre: Hard Sci‑Fi
+  - Genre: Science Fiction
+    Subgenre: Libertarian / Social Sci‑Fi
+  - Genre: Science Fiction
+    Subgenre: Military Sci‑Fi
+  - Genre: Science Fiction
+    Subgenre: Nanopunk
+  - Genre: Science Fiction
+    Subgenre: Post‑Apocalyptic
+  - Genre: Science Fiction
+    Subgenre: Parallel / Multiple Universes
+  - Genre: Science Fiction
+    Subgenre: Soft Sci‑Fi
+  - Genre: Science Fiction
+    Subgenre: Space Opera
+  - Genre: Science Fiction
+    Subgenre: Space Western
+  - Genre: Science Fiction
+    Subgenre: Steampunk
+  - Genre: Science Fiction
+    Subgenre: Techno‑thriller
+  - Genre: Science Fiction
+    Subgenre: Time Travel
+  - Genre: Science Fiction
+    Subgenre: Utopian / Dystopian
+  - Genre: Mystery & Crime
+    Subgenre: Amateur Sleuth
+  - Genre: Mystery & Crime
+    Subgenre: Book Club Mystery
+  - Genre: Mystery & Crime
+    Subgenre: Caper / Heist
+  - Genre: Mystery & Crime
+    Subgenre: Cold Case
+  - Genre: Mystery & Crime
+    Subgenre: Cozy Mystery
+  - Genre: Mystery & Crime
+    Subgenre: Detective / Police Procedural
+  - Genre: Mystery & Crime
+    Subgenre: Forensic Mystery
+  - Genre: Mystery & Crime
+    Subgenre: Hardboiled / Noir
+  - Genre: Mystery & Crime
+    Subgenre: Historical Mystery
+  - Genre: Mystery & Crime
+    Subgenre: Howdunit
+  - Genre: Mystery & Crime
+    Subgenre: Locked-Room Mystery
+  - Genre: Mystery & Crime
+    Subgenre: Legal Thriller
+  - Genre: Mystery & Crime
+    Subgenre: Mystery Thriller
+  - Genre: Mystery & Crime
+    Subgenre: Serial Killer / Psychological Crime
+  - Genre: Mystery & Crime
+    Subgenre: Spy-Fi / Spy Thriller
+  - Genre: Mystery & Crime
+    Subgenre: Whodunit
+  - Genre: Thriller & Suspense
+    Subgenre: Action Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Conspiracy Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Domestic Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Financial Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Legal Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Medical Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Political Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Psychological Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Spy Thriller
+  - Genre: Thriller & Suspense
+    Subgenre: Techno‑Thriller
+  - Genre: Horror
+    Subgenre: Body Horror
+  - Genre: Horror
+    Subgenre: Cosmic / Lovecraftian Horror
+  - Genre: Horror
+    Subgenre: Creature Horror
+  - Genre: Horror
+    Subgenre: Gothic Horror
+  - Genre: Horror
+    Subgenre: Occult Horror
+  - Genre: Horror
+    Subgenre: Paranormal Horror
+  - Genre: Horror
+    Subgenre: Psychological Horror
+  - Genre: Horror
+    Subgenre: Slasher
+  - Genre: Horror
+    Subgenre: Splatterpunk
+  - Genre: Horror
+    Subgenre: Survival Horror
+  - Genre: Horror
+    Subgenre: Supernatural Horror
+  - Genre: Horror
+    Subgenre: Weird Horror
+  - Genre: Romance
+    Subgenre: Contemporary Romance
+  - Genre: Romance
+    Subgenre: Christian / Inspirational Romance
+  - Genre: Romance
+    Subgenre: Dark Romance
+  - Genre: Romance
+    Subgenre: Erotic Romance
+  - Genre: Romance
+    Subgenre: Fantasy Romance (Romantasy)
+  - Genre: Romance
+    Subgenre: Friendship to Lovers
+  - Genre: Romance
+    Subgenre: Historical Romance (Regency, Medieval, Highlander)
+  - Genre: Romance
+    Subgenre: LGBTQ+ Romance (Gay, Lesbian, Bisexual, Transgender, Non-binary)
+  - Genre: Romance
+    Subgenre: Marriage of Convenience
+  - Genre: Romance
+    Subgenre: Medical Romance
+  - Genre: Romance
+    Subgenre: Paranormal Romance
+  - Genre: Romance
+    Subgenre: Regency Romance
+  - Genre: Romance
+    Subgenre: Romantic Comedy
+  - Genre: Romance
+    Subgenre: Romantic Suspense
+  - Genre: Romance
+    Subgenre: Sci‑Fi Romance
+  - Genre: Romance
+    Subgenre: Second-Chance Romance
+  - Genre: Romance
+    Subgenre: Slow-Burn Romance
+  - Genre: Romance
+    Subgenre: Insta‑Love
+  - Genre: Romance
+    Subgenre: Enemies-to-Lovers
+  - Genre: Romance
+    Subgenre: Gothic Romance
+  - Genre: Action & Adventure
+    Subgenre: Espionage / Spy Adventure
+  - Genre: Action & Adventure
+    Subgenre: Lost-World
+  - Genre: Action & Adventure
+    Subgenre: Military Adventure
+  - Genre: Action & Adventure
+    Subgenre: Nautical / Maritime Adventure
+  - Genre: Action & Adventure
+    Subgenre: Picaresque
+  - Genre: Action & Adventure
+    Subgenre: Robinsonade
+  - Genre: Action & Adventure
+    Subgenre: Superhero Adventure
+  - Genre: Action & Adventure
+    Subgenre: Swashbuckling
+  - Genre: Action & Adventure
+    Subgenre: Treasure Hunt
+  - Genre: Action & Adventure
+    Subgenre: Wilderness / Survival Adventure
+  - Genre: Historical Fiction
+    Subgenre: Ancient Civilizations
+  - Genre: Historical Fiction
+    Subgenre: Biographical Historical
+  - Genre: Historical Fiction
+    Subgenre: Medieval
+  - Genre: Historical Fiction
+    Subgenre: Renaissance
+  - Genre: Historical Fiction
+    Subgenre: Regency
+  - Genre: Historical Fiction
+    Subgenre: Victorian
+  - Genre: Historical Fiction
+    Subgenre: Western Historical
+  - Genre: Historical Fiction
+    Subgenre: Wartime Fiction
+  - Genre: Literary / Mainstream Fiction
+    Subgenre: Experimental / Metafiction
+  - Genre: Literary / Mainstream Fiction
+    Subgenre: Philosophical / Psychological
+  - Genre: Literary / Mainstream Fiction
+    Subgenre: Social / Political
+  - Genre: Literary / Mainstream Fiction
+    Subgenre: Character-driven
+  - Genre: Literary / Mainstream Fiction
+    Subgenre: Stream-of-Consciousness
+  - Genre: Literary / Mainstream Fiction
+    Subgenre: Bildungsroman / Coming-of-Age
+  - Genre: Speculative Fiction (Umbrella)
+    Subgenre: Magical Realism
+  - Genre: Speculative Fiction (Umbrella)
+    Subgenre: Supernatural Fiction
+  - Genre: Speculative Fiction (Umbrella)
+    Subgenre: Visionary / Metaphysical Fiction
+  - Genre: Speculative Fiction (Umbrella)
+    Subgenre: Weird Fiction
+  - Genre: Children’s
+    Subgenre: Picture Book
+  - Genre: Children’s
+    Subgenre: Early Reader
+  - Genre: Children’s
+    Subgenre: Middle Grade Adventure
+  - Genre: Children’s
+    Subgenre: Middle Grade Fantasy
+  - Genre: Children’s
+    Subgenre: Middle Grade Mystery
+  - Genre: Children’s
+    Subgenre: Animal Stories
+  - Genre: Young Adult (YA)
+    Subgenre: YA Fantasy
+  - Genre: Young Adult (YA)
+    Subgenre: YA Sci‑Fi
+  - Genre: Young Adult (YA)
+    Subgenre: YA Romance
+  - Genre: Young Adult (YA)
+    Subgenre: YA Mystery / Thriller
+  - Genre: Young Adult (YA)
+    Subgenre: YA Contemporary
+  - Genre: Young Adult (YA)
+    Subgenre: YA Dystopian
+  - Genre: Young Adult (YA)
+    Subgenre: YA Coming-of-Age
+  - Genre: Young Adult (YA)
+    Subgenre: YA LGBTQ+
+  - Genre: New Adult (NA)
+    Subgenre: NA Contemporary
+  - Genre: New Adult (NA)
+    Subgenre: NA Romance
+  - Genre: New Adult (NA)
+    Subgenre: NA Fantasy
+  - Genre: New Adult (NA)
+    Subgenre: NA Coming-of-Age
+  - Genre: Non-Fiction
+    Subgenre: Biography / Autobiography / Memoir
+  - Genre: Non-Fiction
+    Subgenre: History (General, Military, Popular)
+  - Genre: Non-Fiction
+    Subgenre: True Crime
+  - Genre: Non-Fiction
+    Subgenre: Self‑Help / Personal Development
+  - Genre: Non-Fiction
+    Subgenre: Health & Wellness
+  - Genre: Non-Fiction
+    Subgenre: Travel & Nature
+  - Genre: Non-Fiction
+    Subgenre: Popular Science
+  - Genre: Non-Fiction
+    Subgenre: Economics & Business
+  - Genre: Non-Fiction
+    Subgenre: Religion / Spirituality / Theology
+  - Genre: Non-Fiction
+    Subgenre: Art & Photography
+  - Genre: Non-Fiction
+    Subgenre: Cookbooks / Food & Drink
+  - Genre: Non-Fiction
+    Subgenre: Essays & Criticism
+  - Genre: Non-Fiction
+    Subgenre: Academic / Humanities & Social Sciences
+  - Genre: Non-Fiction
+    Subgenre: Reference (Dictionaries, Encyclopedias)
+  - Genre: Non-Fiction
+    Subgenre: Humor & Satire
+  - Genre: Non-Fiction
+    Subgenre: Journalism / Political Commentary
+  - Genre: Non-Fiction
+    Subgenre: Sports
+  - Genre: Non-Fiction
+    Subgenre: Gardening / DIY / Lifestyle
+  - Genre: Poetry & Drama
+    Subgenre: Epic / Narrative Poetry
+  - Genre: Poetry & Drama
+    Subgenre: Lyric / Free Verse / Formal (Sonnets, Haiku)
+  - Genre: Poetry & Drama
+    Subgenre: Tragedy
+  - Genre: Poetry & Drama
+    Subgenre: Comedy
+  - Genre: Poetry & Drama
+    Subgenre: Historical Drama
+  - Genre: Poetry & Drama
+    Subgenre: Modern Drama
+
+Spice_Levels:
+  - Label: 🌶️ Glimpses and kisses
+    Description: Meaningful glances and perhaps a kiss, but no sex on and off page.
+  - Label: 🌶️🌶️ Behind closed doors
+    Description: At least one intimate scene occurs, but without the reader present.
+  - Label: 🌶️🌶️🌶️ Open door
+    Description: At least one intimate scene with the reader present, euphemistic language for act and body parts.
+  - Label: 🌶️🌶️🌶️🌶️ Explicit open door
+    Description: At least two intimate scenes, explicit language with a variety of sexual acts.
+  - Label: 🌶️🌶️🌶️🌶️🌶️ Explicit and plentiful
+    Description: Several explicit scenes, a variety of adventurous acts, dotted throughout the book.
+
+Tropes:
+  - Genre: General Romance
+    Tropes:
+      - Accidental Pregnancy
+      - Adult Entertainer
+      - Adventure Romance
+      - Alpha Hero
+      - Amnesia
+      - Anti-Hero
+      - Arranged Marriage
+      - Artist
+      - Assassin
+      - Athlete
+      - Bad at Sex
+      - Bad Boy
+      - Bartender
+      - Bachelor Auction
+      - Bearded
+      - Beauty and the Beast Retelling
+      - Bet or Dare
+      - Beta
+      - Biker
+      - Billionaire
+      - Blind Date
+      - Bisexual
+      - Blue Collar
+      - Bodyguard
+      - Bully
+      - Betrayal
+      - Celebrity Romance
+      - Chef
+      - Childhood Best Friends to Lovers
+      - Childhood Crush
+      - Childhood Nemesis
+      - Chronic Illness
+      - Circle of Friends
+      - Cinnamon Roll
+      - Closed Door Romance (no sex)
+      - Coming of Age
+      - Coming Out
+      - Cop
+      - Cowboy
+      - Curvy Heroine
+      - Damsel in Distress
+      - Dark Romance
+      - Disabled
+      - Domme Heroine
+      - Dubious Consent
+      - Enemies to Lovers
+      - Epistolary
+      - Ex-Boyfriend’s Dad
+      - Ex-Con
+      - Fairytale Retelling
+      - Fake Relationship
+      - Farmer
+      - Firefighter
+      - Fish Out of Water
+      - Forbidden Romance
+      - Forced Proximity
+      - Friends to Lovers
+      - Gamer
+      - Gay (male/male, men loving men)
+      - Gay for You
+      - Geek
+      - Gender Bender
+      - Girl Next Door
+      - Gothic Romance
+      - Grumpy/Sunshine
+      - Groveling
+      - He Hates Everyone Except for Her
+      - Heiress
+      - Hero Falls First
+      - Holiday Romance
+      - Home for the Holidays
+      - If I Can’t Have You, Nobody Will
+      - Insta Love
+      - Interracial
+      - Jerk
+      - Jilted Lover
+      - Kidnapping
+      - Lawyer
+      - Love at First Sight
+      - Love Triangle
+      - Mafia
+      - Manwhore
+      - Marriage in Trouble
+      - Marriage of Convenience
+      - Marriage Pact
+      - Medical Profession
+      - Men in Uniform
+      - Menage
+      - Mistaken Identity
+      - Movie Star
+      - Nanny
+      - Neighbors to Lovers
+      - New Girl in Town
+      - Non-binary
+      - Nursed Back to Health
+      - Oblivious to Love
+      - Office Romance
+      - Older Characters
+      - One Night Stand
+      - Online Romance
+      - Opposites Attract
+      - Partners in Fighting Crime
+      - Plain Jane
+      - Political
+      - Polyamory
+      - Prom Date
+      - Redemption Arc
+      - Recluse
+      - Rescue Mission
+      - Revenge
+      - Reverse Harem
+      - Road Trip Romance
+      - Rockstar
+      - Romantic Comedies
+      - Roommates to Lovers
+      - Royalty/Commoner
+      - Runaway Bride
+      - Sapphic (female/female)
+      - Second Chance
+      - Secret Baby
+      - Serial Killer
+      - Set at a Circus
+      - Set in a Big City
+      - Set in College
+      - Set in a Specific Location
+      - Siblings’ Best Friend
+      - Siblings’ Ex
+      - Single Parent/Guardian
+      - Slow Burn
+      - Small Town Romance
+      - Snowbound
+      - Southern Romance
+      - Sports Romance (Baseball, Fighters, Football, Hockey, Soccer, F1, etc.)
+      - Star Crossed Lovers
+      - Stepbrother
+      - Stranded Together
+      - Student/Teacher
+      - Sworn Off Relationships
+      - Taboo Romance
+      - Tear Jerker
+      - Tortured Hero
+      - Trapped in an Elevator
+      - Transgender
+      - Ugly (Scarred/Disfigured)
+      - Undercover Love
+      - Unrequited Love
+      - Unexpected Inheritance
+      - Vegas/Drunk Marriage
+      - Virgin Heroes
+      - Wedding Hookup
+      - Wedding Theme/Setting
+      - Widow(er)
+      - Workplace Romance
+      - Wrong Side of the Tracks
+      - Younger Hero
+  - Genre: Historical Romance
+    Tropes:
+      - Colonial
+      - Compromised/Scandal Forces Marriage
+      - Courtesan
+      - Gilded Age
+      - Governess
+      - Highlanders
+      - Knights
+      - Long Lost Heir
+      - Medieval
+      - Pirates
+      - Rake and Wallflower
+      - Rakes
+      - Reforming the Rake
+      - Regency
+      - Roaring Twenties
+      - Soldier
+      - Spinster Wallflowers
+      - Spy
+      - Victorian
+      - Wallflower
+      - Wartime
+  - Genre: Paranormal Romance
+    Tropes:
+      - Aliens
+      - Angels
+      - Bands of Warriors
+      - Cyborgs
+      - Cursed
+      - Demons
+      - Dragons
+      - Fae
+      - Fated Mates
+      - Gargoyle
+      - Ghosts
+      - God/Goddess
+      - Love Potion
+      - Magical Competition
+      - Magical Quest
+      - Magical Realism
+      - Merfolk
+      - Mythology
+      - Post Apocalyptic
+      - Psychic
+      - Rejected Mates
+      - Romantic Comedy
+      - Shifters
+      - Succubus/Incubus
+      - Superheroes/Superpowers
+      - Time Travel
+      - Training Academy
+      - Vampires
+      - Witches & Warlocks
+      - Zombies
+  - Genre: Mystery
+    Tropes:
+      - Accidental Murder
+      - Amateur Detective
+      - Amateur Sleuth
+      - Anti-Hero
+      - Animal Sidekicks
+      - Arson
+      - Betrayal
+      - Blackmail
+      - Bludgeoning
+      - Book Clubs or Reading Groups
+      - Buried Secrets
+      - Cat and Mouse
+      - Community Secrets
+      - Conspiracy
+      - Corrupt Officials
+      - Courtroom Drama
+      - Craft or Cooking Themes
+      - Crime Family
+      - Cults
+      - Dark Family Histories
+      - Dark Past
+      - Dangerous Romance
+      - Detective
+      - Domestic Abuse
+      - Double Life
+      - Drowning
+      - Dual Perspectives
+      - Eccentric Characters
+      - Electrocution
+      - Escape
+      - Espionage
+      - Explosion
+      - Exposure to Elements
+      - Family Heirlooms or Legacies
+      - Family Secrets
+      - Femme Fatale
+      - Forbidden Love
+      - Framed
+      - Gangs
+      - Garden Parties
+      - Government Agent
+      - Heist
+      - Hidden Identities
+      - High Stakes
+      - Historical Buildings
+      - Hired Assassin
+      - Hit and Run
+      - Holiday Themes
+      - Home Invasion
+      - Hostage Situation
+      - Identity Theft
+      - Inheritance Disputes
+      - Innocent Accused
+      - Investigative Journalist
+      - Kidnapping
+      - Local Business Owner Sleuth
+      - Locked Room Mystery
+      - Love Amid Conspiracy
+      - Love in Dangerous Locations
+      - Love Under Threat
+      - Manipulative Friends
+      - Marital Infidelity
+      - Mastermind Villain
+      - Missing Family Member
+      - Missing Person
+      - Mob Boss
+      - Mole Within
+      - Murder
+      - Mysterious Benefactor
+      - Noir
+      - Nosy Neighbors
+      - Obsession
+      - On the Run Together
+      - Paranoid Thriller
+      - Partners in Fighting Crime
+      - Past Lover as Antagonist
+      - Police Procedural
+      - Poisoning
+      - Political Intrigue
+      - Private Investigator
+      - Protection Detail
+      - Psychological Disorder
+      - Psychological Manipulation
+      - Psychological Thriller
+      - Puzzle or Riddle to Solve
+      - Quaint Village Setting
+      - Ransom
+      - Red Herring
+      - Revenge
+      - Ritualistic Killing
+      - Rogue Cop
+      - Romantic Rivalries
+      - Secret Society
+      - Serial Killer
+      - Shooting
+      - Small Town Gossip
+      - Social Media Plot
+      - Spy Thriller
+      - Stabbing
+      - Stalker
+      - Strangulation
+      - Suffocation
+      - Supernatural Elements
+      - Suspect List
+      - Ticking Clock Scenario
+      - Twisted Love Triangle
+      - Undercover Operation
+      - Unreliable Narrator
+      - Vigilante Justice
+      - Whistleblower
+      - Witness Protection
+      - Wrong Place, Wrong Time
+  - Genre: Common Mystery Settings
+    Tropes:
+      - Big City
+      - Closed Community (island, gated)
+      - Exotic Locale
+      - Small Town
+      - Old Mansion
+      - Remote Village
+      - Secluded Estate
+      - Courtroom
+      - Police Station
+      - Hospital
+      - Boarding School
+      - Train
+      - Cruise Ship
+  - Genre: Fantasy
+    Tropes:
+      - AI Revolutions
+      - Alien Invasions
+      - All Hope Lost
+      - Ancient Prophecy
+      - Anti-Hero Main Character
+      - Antagonist Turned Ally
+      - Body Switching
+      - Chosen One
+      - Complex Political Systems
+      - Corruption and Redemption
+      - Creature Hunter
+      - Cyberpunk Futures
+      - Dark Lord
+      - Dystopian Societies
+      - Elemental Powers
+      - End of Human Race
+      - Enchanted Objects
+      - Epic Quest
+      - Evil Empire
+      - Evil/Good Wizard, Witch, or Sorcerer
+      - Fate Worse Than Death
+      - Female Warriors
+      - Fight Against an Older Antagonist
+      - First Contact
+      - Forbidden Magic
+      - Found Family
+      - Funny Sidekick
+      - Galactic Empires
+      - Genetic Engineering
+      - Gods and Goddesses
+      - Good vs Evil
+      - Government in Exile
+      - Grand Battles and Sieges
+      - Grumpy
+      - Hidden Identity
+      - Hidden Truth or Inheritance
+      - Hidden World
+      - Immortal Beings
+      - Legendary Artifacts
+      - Legends and Mythology
+      - Light and Dark
+      - Long-Lost Royalty
+      - Lovable Rogue
+      - Love Triangle
+      - Lost Heir
+      - Magic in the Mundane
+      - Magical Academy
+      - Morally Grey Characters
+      - Mythical Creatures
+      - Non-Human Races
+      - Noble Knight
+      - Not Like Other Girls
+      - One Bed
+      - Orphan Hero
+      - Parallel Universes
+      - Paying the Price
+      - Post-Apocalyptic Survival
+      - Prince(ss) and the Pauper
+      - Prophecies
+      - Puzzle Solving
+      - Ragtag Team of Heroes
+      - Raising the Dead
+      - Reluctant Hero
+      - Royal Intrigue
+      - Sacrifice
+      - Secret Society
+      - Space Exploration
+      - Space Opera
+      - Steampunk Aesthetics
+      - Strong Heroine Saves the Day
+      - Supernatural Abilities
+      - Technological Singularities
+      - The Alliance
+      - The Bodyguard
+      - The Outsider
+      - The Unchosen One
+      - Time Travel
+      - Unbreakable Codes
+      - Unlikely Alliance
+      - Virtual Realities
+      - War Between Kingdoms
+      - Wizards and Witches
+      - Wise Old Mentor
+      - World-Ending Threats
+  - Genre: Common Fantasy Settings
+    Tropes:
+      - Floating City
+      - Futuristic City
+      - Haunted Forest
+      - Hidden Enclave
+      - Magical Realm
+      - Parallel World
+      - Secret Laboratory
+      - Tavern
+      - Towering Castle
+      - Ancient Kingdom
+      - Underwater City
+      - Battlestar or Spacecraft
+      - Distant Planet
+      - Space Station
