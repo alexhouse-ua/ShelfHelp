@@ -4,8 +4,6 @@ tools: ['codebase', 'usages']
 ---
 # File summary mode
 
-DEPRECATED: Use file-summary.chatmode.md instead. This file is superseded and kept only for discoverability.
-
 Summarize the selected target. Include:
 - Purpose and primary responsibilities
 - Public API surface (functions, types, commands)

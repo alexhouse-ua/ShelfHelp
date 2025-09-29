@@ -4,8 +4,8 @@ status: backlog
 created: 2025-09-29T00:01:08Z
 progress: 0%
 prd: .claude/prds/installation-configuration.md
-github: https://github.com/alexhouse-ua/ShelfHelp/issues/1
-last_sync: 2025-09-29T00:10:38Z
+github: https://github.com/alexhouse-ua/ShelfHelp/issues/8
+last_sync: 2025-09-29T00:56:13Z
 ---
 
 # Epic: Installation & Configuration Setup
@@ -162,3 +162,19 @@ High-level task categories that will be created:
 - Other developers can reproduce setup using documentation
 - Environment remains stable throughout development cycle
 - Easy transition from development to production deployment
+
+## Tasks Created
+- [ ] #10 - Core Development Tools Installation (parallel: true)
+- [ ] #15 - Container and Database Setup (parallel: false, depends on 10)
+- [ ] #17 - Tool Configuration and Version Verification (parallel: false, depends on 10, 15)
+- [ ] #12 - Supabase Project and Database Configuration (parallel: true)
+- [ ] #13 - Telegram Bot Registration and Configuration (parallel: true)
+- [ ] #14 - Google AI Studio API Key Setup (parallel: true)
+- [ ] #9 - Environment Variables Setup and Security (parallel: false, depends on 12, 13, 14)
+- [ ] #11 - Local Development Environment Integration (parallel: false, depends on 15, 9)
+- [ ] #16 - End-to-End Validation and Testing (parallel: false, depends on 10, 15, 17, 12, 13, 14, 9, 11)
+
+Total tasks: 9
+Parallel tasks: 4 (10, 12, 13, 14)
+Sequential tasks: 5 (15, 17, 9, 11, 16)
+Estimated total effort: 22-27 hours

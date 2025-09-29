@@ -4,8 +4,6 @@ tools: ['codebase', 'search', 'usages', 'findTestFiles']
 ---
 # Planning mode
 
-DEPRECATED: Use planning.chatmode.md instead. This file is superseded and kept only for discoverability.
-
 Deliver:
 - Overview
 - Requirements and assumptions

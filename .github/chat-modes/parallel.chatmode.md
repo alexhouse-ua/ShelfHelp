@@ -4,8 +4,6 @@ tools: ['codebase', 'search', 'usages', 'githubRepo']
 ---
 # Parallel planning mode
 
-DEPRECATED: Use parallel.chatmode.md instead. This file is superseded and kept only for discoverability.
-
 Output:
 - A set of independent work items with boundaries and dependencies
 - Interfaces or contracts between items

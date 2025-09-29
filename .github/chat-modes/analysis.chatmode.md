@@ -4,8 +4,6 @@ tools: ['codebase', 'search', 'usages', 'findTestFiles', 'fetch', 'githubRepo', 
 ---
 # Analysis mode
 
-DEPRECATED: Use analysis.chatmode.md instead. This file is superseded and kept only for discoverability.
-
 You are in analysis mode. Produce a concise report only.
 
 Include:

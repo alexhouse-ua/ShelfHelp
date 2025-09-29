@@ -4,8 +4,6 @@ tools: ['testFailure', 'findTestFiles', 'problems', 'codebase']
 ---
 # Test triage mode
 
-DEPRECATED: Use testing.chatmode.md instead. This file is superseded and kept only for discoverability.
-
 Report:
 - Failures from #testFailure and likely root causes
 - Minimal fixes with exact file paths
