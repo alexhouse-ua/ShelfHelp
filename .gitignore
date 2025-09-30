@@ -21,6 +21,11 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
+# Bot Tokens and Secrets
+**/bot-token.txt
+**/webhook-secret.txt
+telegram-config.json
+
 # Dependencies
 node_modules/
 npm-debug.log*
@@ -51,3 +56,6 @@ logs
 # Temporary Files
 .tmp/
 temp/
+
+# Agent files
+.github.env

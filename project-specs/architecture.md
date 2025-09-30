@@ -5,17 +5,18 @@
 This document outlines the architectural approach for building the **Shelf Help Assistant**. Its primary goal is to serve as the guiding architectural blueprint for development, ensuring we build a system that is reliable, maintainable, and aligned with our goals.
 
 ### Project Context Summary
-* **Primary Purpose:** To create a personal, learning AI agent that helps the user manage their reading list and gain insights into their habits.
-* **Tech Stack:** A Supabase-centric stack using TypeScript, PostgreSQL with `pgvector`, and Edge Functions.
-* **Architecture Style:** A serverless, event-driven architecture.
-* **Deployment Method:** Automated CI/CD via GitHub Actions.
-* **Available Documentation:**
-    * A comprehensive and revised Project Brief.
-    * A detailed and revised Product Requirements Document (PRD) with a multi-epic roadmap.
-* **Identified Constraints:**
-    * The system must operate at zero cost.
-    * The system is for a single user only.
-    * The V1 interface is exclusively a Telegram Bot.
+
+- **Primary Purpose:** To create a personal, learning AI agent that helps the user manage their reading list and gain insights into their habits.
+- **Tech Stack:** A Supabase-centric stack using TypeScript, PostgreSQL with `pgvector`, and Edge Functions.
+- **Architecture Style:** A serverless, event-driven architecture.
+- **Deployment Method:** Automated CI/CD via GitHub Actions.
+- **Available Documentation:**
+  - A comprehensive and revised Project Brief.
+  - A detailed and revised Product Requirements Document (PRD) with a multi-epic roadmap.
+- **Identified Constraints:**
+  - The system must operate at zero cost.
+  - The system is for a single user only.
+  - The V1 interface is exclusively a Telegram Bot.
 
 ---
 ## 2. Project Scope and Integration Strategy
@@ -35,42 +36,43 @@ This document outlines the architectural approach for building the **Shelf Help 
 * **Database Schema Compatibility:** The new database schema must be designed to accommodate the data from the initial `classifications.yaml`, `recommendation-sources.yaml`, and the one-time **CSV historical backfill**.
 * **UI/UX Consistency:** All bot interactions must align with the personality of an **expert, data-driven assistant** with an **enthusiastic, friendly, and casual tone**, as defined in the PRD.
 * **Performance Impact:** All operations must be designed to fit within the Supabase free tier's performance and execution limits.
-
 ---
+
 ## 3. Tech Stack Alignment
 
 ### Approved Foundational Technology Stack
-* **Deno is required**: Supabase Edge Functions, which are the core of our backend, are built to run on Deno. It is a required part of the Supabase platform, not an optional tool.
-* **Principle**: All technology versions will be pinned to specific numbers (e.g., `v2.5.0`) before development begins to ensure a stable, reproducible build environment.
 
-| Category           | Technology            | Rationale                                    |
-| :----------------- | :-------------------- | :------------------------------------------- |
-| Language           | TypeScript            | The primary language for the project.        |
-| Backend Runtime    | Deno                  | The required runtime for Supabase Edge Functions. |
-| Database           | PostgreSQL w/ pgvector | The core database and vector extension from Supabase. |
-| AI Orchestration   | LangChain + LangGraph | The frameworks for building the AI logic.    |
-| Scheduling         | pg\_cron              | The native cron job scheduler in Supabase.   |
+- **Deno is required**: Supabase Edge Functions, which are the core of our backend, are built to run on Deno. It is a required part of the Supabase platform, not an optional tool.
+- **Principle**: All technology versions will be pinned to specific numbers (e.g., `v2.5.0`) before development begins to ensure a stable, reproducible build environment.
+
+| Category         | Technology             | Rationale                                             |
+| :--------------- | :--------------------- | :---------------------------------------------------- |
+| Language         | TypeScript             | The primary language for the project.                 |
+| Backend Runtime  | Deno                   | The required runtime for Supabase Edge Functions.     |
+| Database         | PostgreSQL w/ pgvector | The core database and vector extension from Supabase. |
+| AI Orchestration | LangChain + LangGraph  | The frameworks for building the AI logic.             |
+| Scheduling       | pg\_cron               | The native cron job scheduler in Supabase.            |
 
 ### New Technology Additions (External Dependencies)
 
-| Technology         | Purpose                                    |
-| :----------------- | :----------------------------------------- |
-| Telegram Bot API   | The API for the primary user interface.    |
-| Google Gemini API  | The API for natural language generation and analysis. |
+| Technology        | Purpose                                               |
+| :---------------- | :---------------------------------------------------- |
+| Telegram Bot API  | The API for the primary user interface.               |
+| Google Gemini API | The API for natural language generation and analysis. |
 
 ### Development, Testing, and Deployment Tooling
 
-| Category        | Technology             | Rationale                                                      |
-| :-------------- | :--------------------- | :------------------------------------------------------------- |
-| Node.js Runtime | Node.js LTS            | Required for the ecosystem of development tools like npm.      |
-| Package Manager | npm                    | For managing development tool dependencies.                      |
-| Code Quality    | ESLint & Prettier      | Enforces consistent code style and prevents common errors.     |
-| **Git Hooks** | **Husky** | **Automates local quality checks before commits and pushes.** |
-| **Bot Framework** | **grammY** | **Simplifies interaction with the Telegram Bot API.** |
-| Testing         | Deno Test Runner       | The native, built-in solution for testing Deno applications. |
-| CI/CD           | GitHub Actions         | Native integration for deploying to Supabase.                  |
-| Local Environment | Supabase CLI & Docker  | Essential for emulating the full production environment locally. |
-| Version Control | Git                    | For source code management.                                    |
+| Category          | Technology            | Rationale                                                        |
+| :---------------- | :-------------------- | :--------------------------------------------------------------- |
+| Node.js Runtime   | Node.js LTS           | Required for the ecosystem of development tools like npm.        |
+| Package Manager   | npm                   | For managing development tool dependencies.                      |
+| Code Quality      | ESLint & Prettier     | Enforces consistent code style and prevents common errors.       |
+| **Git Hooks**     | **Husky**             | **Automates local quality checks before commits and pushes.**    |
+| **Bot Framework** | **grammY**            | **Simplifies interaction with the Telegram Bot API.**            |
+| Testing           | Deno Test Runner      | The native, built-in solution for testing Deno applications.     |
+| CI/CD             | GitHub Actions        | Native integration for deploying to Supabase.                    |
+| Local Environment | Supabase CLI & Docker | Essential for emulating the full production environment locally. |
+| Version Control   | Git                   | For source code management.                                      |
 
 ---
 ## 4. Data Models and Schema Changes
@@ -88,19 +90,21 @@ This document outlines the architectural approach for building the **Shelf Help 
 * `user_preferences`
 * `conversational_state`
 * `book_events`
-
 ---
+
 ## 5. Component Architecture
 
 ### New Components
-* **`Telegram Webhook Handler`**: The single, secure entry point for all incoming messages from the Telegram Bot API.
-* **`Command & Intent Parser`**: Determines the user's intent from raw text and extracts key entities.
-* **`Workflow & State Manager`**: Manages the state of all multi-step conversations, like the post-read reflection.
-* **`Data Ingestion & Enrichment Service`**: Handles fetching and enriching book data from external sources.
-* **`Queue & Recommendation Engine`**: Contains the core logic for prioritizing the TBR queue and generating recommendations.
-* **`Reporting Service`**: Generates and delivers the weekly and monthly insight reports.
+
+- **`Telegram Webhook Handler`**: The single, secure entry point for all incoming messages from the Telegram Bot API.
+- **`Command & Intent Parser`**: Determines the user's intent from raw text and extracts key entities.
+- **`Workflow & State Manager`**: Manages the state of all multi-step conversations, like the post-read reflection.
+- **`Data Ingestion & Enrichment Service`**: Handles fetching and enriching book data from external sources.
+- **`Queue & Recommendation Engine`**: Contains the core logic for prioritizing the TBR queue and generating recommendations.
+- **`Reporting Service`**: Generates and delivers the weekly and monthly insight reports.
 
 ### Component Interaction Diagram
+
 ```mermaid
 graph TD
     subgraph "External Services"
@@ -136,12 +140,14 @@ graph TD
 ## 6. API Design and Integration
 
 ### API Integration Strategy
-* The system will expose a single, primary API endpoint to be used as a webhook by the Telegram Bot API.
-* The webhook will be secured by validating a secret token sent in the `X-Telegram-Bot-Api-Secret-Token` HTTP header.
-* The API will be versioned as `v1` in its URL path.
+
+- The system will expose a single, primary API endpoint to be used as a webhook by the Telegram Bot API.
+- The webhook will be secured by validating a secret token sent in the `X-Telegram-Bot-Api-Secret-Token` HTTP header.
+- The API will be versioned as `v1` in its URL path.
 
 ### New API Endpoints
-* **Endpoint:** `POST /api/v1/telegram-webhook`
+
+- **Endpoint:** `POST /api/v1/telegram-webhook`
 
 ---
 ## 7. AI Orchestration Architecture
@@ -163,7 +169,7 @@ graph LR
     D --> E[Response to User]
 ```
 
-#### Post-Read Reflection (Complex LangGraph)   
+#### Post-Read Reflection (Complex LangGraph)
 ```mermaid
 graph TD
     A[User: "Finished reading X"] --> B[Start Reflection Workflow]
@@ -188,8 +194,8 @@ graph TD
 * **Purpose:** To provide natural language understanding and generation.
 * **Documentation:** [https://ai.google.dev/docs](https://ai.google.dev/docs)
 * **Integration Method:** Outbound REST API calls via LangChain integration from Supabase Edge Functions.
-
 ---
+
 ## 9. Source Tree Integration
 
 The final source tree structure will be determined during the initial development phase of Epic 1. The goal is to allow a natural, simple structure to emerge from the code itself, rather than prescribing a potentially over-engineered structure upfront. This aligns with the project's principle of maintainability and simplicity for a solo developer.
@@ -216,20 +222,22 @@ The primary line of defense for code quality will happen locally, managed by **H
 
 ### Rollback Strategy
 * **Rollback Method:** Problematic deployments will be rolled back by reverting the corresponding commit in Git, which automatically triggers a re-deployment of the previous stable version.
-
 ---
+
 ## 11. Coding Standards and Conventions
 
 ### Existing Standards Compliance
-* **Code Style:** Enforced by ESLint & Prettier.
-* **Linting Rules:** A strict ESLint configuration will be used.
-* **Testing Patterns:** All new code will be accompanied by tests written with the Deno Test Runner.
-* **Documentation Style:** All functions and complex types will be documented using TSDoc comments.
+
+- **Code Style:** Enforced by ESLint & Prettier.
+- **Linting Rules:** A strict ESLint configuration will be used.
+- **Testing Patterns:** All new code will be accompanied by tests written with the Deno Test Runner.
+- **Documentation Style:** All functions and complex types will be documented using TSDoc comments.
 
 ### Critical Integration Rules
-* **Database Integration:** All database access must go through the Supabase client.
-* **Error Handling:** A standardized error handling and logging framework will be used (to be defined during implementation).
-* **Logging Consistency:** All logs should be structured (JSON) and include a request ID.
+
+- **Database Integration:** All database access must go through the Supabase client.
+- **Error Handling:** A standardized error handling and logging framework will be used (to be defined during implementation).
+- **Logging Consistency:** All logs should be structured (JSON) and include a request ID.
 
 ---
 ## 12. Lean Testing Strategy
@@ -248,5 +256,4 @@ The primary goal of our testing strategy is to provide **high confidence** in th
 ### What We Are Explicitly NOT Doing
 * **No Automated E2E Testing:** For a single-user Telegram bot, manual testing of user flows in the app is sufficient and more cost-effective.
 * **No Strict Naming Conventions:** Test files will be named logically but will not follow complex naming schemes.
-
 ---
