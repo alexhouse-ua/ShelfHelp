@@ -31,5 +31,15 @@ jobs:
       - name: Start Supabase local instance
         run: supabase start
 
+      - name: Serve Edge Functions
+        run: supabase functions serve &
+        env:
+          TELEGRAM_BOT_TOKEN: test_token
+          TELEGRAM_WEBHOOK_SECRET: test_secret
+          GOOGLE_GEMINI_API_KEY: test_key
+
+      - name: Wait for Edge Functions to be ready
+        run: sleep 5
+
       - name: Run tests
         run: deno test -A
