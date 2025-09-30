@@ -29,16 +29,7 @@ jobs:
           version: latest
 
       - name: Start Supabase local instance
-        run: supabase start &
-
-      - name: Wait for Supabase to be ready
-        run: |
-          echo "Waiting for Supabase to be ready..."
-          timeout 120 bash -c 'until curl -f http://127.0.0.1:54321/rest/v1/ 2>/dev/null; do
-            echo "Waiting for Supabase...";
-            sleep 3;
-          done'
-          echo "Supabase is ready!"
+        run: supabase start
 
       - name: Run tests
         run: deno test -A
