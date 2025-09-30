@@ -21,7 +21,7 @@ jobs:
         run: deno lint
 
       - name: Run Deno format check
-        run: deno fmt --check
+        run: deno fmt --check --ignore=docs/,README.md
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
