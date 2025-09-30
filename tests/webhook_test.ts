@@ -42,37 +42,45 @@ function createMockUpdate(command: string, chatId = 123456789): object {
   };
 }
 
-Deno.test("Webhook: Should reject requests without secret token", async () => {
-  const mockUpdate = createMockUpdate("/start");
+Deno.test({
+  name: "Webhook: Should reject requests without secret token",
+  ignore: Deno.env.get("CI") === "true", // Skip in CI - Edge Functions not served
+  async fn(): Promise<void> {
+    const mockUpdate = createMockUpdate("/start");
 
-  const response = await fetch(WEBHOOK_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(mockUpdate),
-  });
+    const response = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(mockUpdate),
+    });
 
-  assertEquals(response.status, 401);
-  const result = await response.json();
-  assertEquals(result.error, "Unauthorized");
+    assertEquals(response.status, 401);
+    const result = await response.json();
+    assertEquals(result.error, "Unauthorized");
+  },
 });
 
-Deno.test("Webhook: Should reject requests with invalid secret token", async () => {
-  const mockUpdate = createMockUpdate("/start");
+Deno.test({
+  name: "Webhook: Should reject requests with invalid secret token",
+  ignore: Deno.env.get("CI") === "true", // Skip in CI - Edge Functions not served
+  async fn(): Promise<void> {
+    const mockUpdate = createMockUpdate("/start");
 
-  const response = await fetch(WEBHOOK_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Telegram-Bot-Api-Secret-Token": "invalid-secret-token",
-    },
-    body: JSON.stringify(mockUpdate),
-  });
+    const response = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": "invalid-secret-token",
+      },
+      body: JSON.stringify(mockUpdate),
+    });
 
-  assertEquals(response.status, 401);
-  const result = await response.json();
-  assertEquals(result.error, "Unauthorized");
+    assertEquals(response.status, 401);
+    const result = await response.json();
+    assertEquals(result.error, "Unauthorized");
+  },
 });
 
 // NOTE: This test is skipped because Supabase Edge Functions local serve

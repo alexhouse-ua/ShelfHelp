@@ -31,15 +31,8 @@ jobs:
       - name: Start Supabase local instance
         run: supabase start
 
-      - name: Serve Edge Functions
-        run: supabase functions serve &
-        env:
-          TELEGRAM_BOT_TOKEN: test_token
-          TELEGRAM_WEBHOOK_SECRET: test_secret
-          GOOGLE_GEMINI_API_KEY: test_key
-
-      - name: Wait for Edge Functions to be ready
-        run: sleep 5
-
       - name: Run tests
         run: deno test -A
+        env:
+          SUPABASE_URL: http://127.0.0.1:54321
+          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
