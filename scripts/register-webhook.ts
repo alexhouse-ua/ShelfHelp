@@ -17,8 +17,8 @@ const env = await load();
 
 const BOT_TOKEN = env.TELEGRAM_BOT_TOKEN || Deno.env.get("TELEGRAM_BOT_TOKEN");
 const WEBHOOK_SECRET = env.TELEGRAM_WEBHOOK_SECRET || Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
-const SUPABASE_PROJECT_REF =
-  env.SUPABASE_PROJECT_REF || Deno.env.get("SUPABASE_PROJECT_REF") || "wyzuelwotgyoautxjpxv";
+const SUPABASE_PROJECT_REF = env.SUPABASE_PROJECT_REF || Deno.env.get("SUPABASE_PROJECT_REF") ||
+  "wyzuelwotgyoautxjpxv";
 
 if (!BOT_TOKEN) {
   console.error("❌ TELEGRAM_BOT_TOKEN is not set");
