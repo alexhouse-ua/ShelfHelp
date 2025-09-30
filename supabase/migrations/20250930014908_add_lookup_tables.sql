@@ -44,3 +44,13 @@ CREATE TABLE recommendation_sources (
 CREATE INDEX idx_subgenres_genre_id ON subgenres(genre_id);
 CREATE INDEX idx_tropes_genre_id ON tropes(genre_id);
 CREATE INDEX idx_recommendation_sources_priority ON recommendation_sources(priority);
+
+-- Grants for PostgREST API access
+GRANT SELECT ON genres TO anon, authenticated;
+GRANT SELECT ON subgenres TO anon, authenticated;
+GRANT SELECT ON tropes TO anon, authenticated;
+GRANT SELECT ON spice_levels TO anon, authenticated;
+GRANT SELECT ON recommendation_sources TO anon, authenticated;
+
+-- Ensure PostgREST sees new tables immediately
+NOTIFY pgrst, 'reload schema';

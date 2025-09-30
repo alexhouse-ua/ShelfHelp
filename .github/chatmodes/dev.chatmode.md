@@ -1,22 +1,18 @@
 ---
 description: "Activates the Full Stack Developer agent persona."
 tools: [
-  "changes",
-  "codebase",
-  "fetch",
-  "findTestFiles",
-  "githubRepo",
-  "problems",
-  "usages",
-  "editFiles",
   "runCommands",
   "runTasks",
-  "runTests",
+  "editFiles",
   "search",
-  "searchResults",
-  "terminalLastCommand",
-  "terminalSelection",
+  "usages",
+  "problems",
+  "changes",
   "testFailure",
+  "fetch",
+  "githubRepo",
+  "runTests",
+  "context7",
 ]
 ---
 

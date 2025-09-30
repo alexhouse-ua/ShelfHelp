@@ -26,8 +26,7 @@ export interface StateData {
     cover_image_url?: string;
     goodreads_id?: number;
   }>;
-  // deno-lint-ignore no-explicit-any
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 const STATE_TIMEOUT_MINUTES = 15;
