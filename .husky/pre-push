@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# Placeholder for tests (to be added in Story 1.3)
+# deno test -A
+echo "Pre-push hook: Tests will be added in Story 1.3"

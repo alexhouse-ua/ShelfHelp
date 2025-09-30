@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+# Format staged/common source files (single brace pattern avoids "no files" errors per extension)
+npx prettier --write '**/*.{ts,tsx,md,json,yml,yaml}'
+
+# Run Deno formatter and linter for Deno projects
+deno fmt
+deno lint

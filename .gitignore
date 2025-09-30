@@ -58,4 +58,4 @@ logs
 temp/
 
 # Agent files
-.github
+.github.env

@@ -1,303 +1,303 @@
 recommendation_sources:
   tier1_primary:
     bestsellers:
-      - name: 'Goodreads'
-        url: 'https://www.goodreads.com'
-        scope: 'overall'
-        categories: ['bestsellers', 'new_releases', 'discovery']
+      - name: "Goodreads"
+        url: "https://www.goodreads.com"
+        scope: "overall"
+        categories: ["bestsellers", "new_releases", "discovery"]
         priority: 1
-      - name: 'Amazon'
-        url: 'https://www.amazon.com'
-        scope: 'overall'
-        categories: ['bestsellers']
+      - name: "Amazon"
+        url: "https://www.amazon.com"
+        scope: "overall"
+        categories: ["bestsellers"]
         priority: 2
-      - name: 'New York Times'
-        url: 'https://www.nytimes.com'
-        scope: 'overall'
-        categories: ['bestsellers']
+      - name: "New York Times"
+        url: "https://www.nytimes.com"
+        scope: "overall"
+        categories: ["bestsellers"]
         priority: 3
-      - name: 'Barnes & Noble'
-        url: 'https://www.barnesandnoble.com'
-        scope: 'overall'
-        categories: ['bestsellers']
+      - name: "Barnes & Noble"
+        url: "https://www.barnesandnoble.com"
+        scope: "overall"
+        categories: ["bestsellers"]
         priority: 4
 
     trending_social:
-      - name: 'BookTok (General)'
-        url: 'https://www.tiktok.com/tag/booktok'
-        scope: 'overall'
-        categories: ['trending', 'viral']
+      - name: "BookTok (General)"
+        url: "https://www.tiktok.com/tag/booktok"
+        scope: "overall"
+        categories: ["trending", "viral"]
         priority: 1
-      - name: 'beanchambers (TikTok)'
-        url: 'https://www.tiktok.com'
-        scope: 'romance'
-        categories: ['trending', 'romance']
+      - name: "beanchambers (TikTok)"
+        url: "https://www.tiktok.com"
+        scope: "romance"
+        categories: ["trending", "romance"]
         priority: 2
-      - name: 'Tierny Reads (TikTok)'
-        url: 'https://www.tiktok.com'
-        scope: 'romance'
-        categories: ['trending', 'romance']
+      - name: "Tierny Reads (TikTok)"
+        url: "https://www.tiktok.com"
+        scope: "romance"
+        categories: ["trending", "romance"]
         priority: 3
-      - name: 'Book Riot'
-        url: 'https://bookriot.com'
-        scope: 'overall'
-        categories: ['trending', 'upcoming']
+      - name: "Book Riot"
+        url: "https://bookriot.com"
+        scope: "overall"
+        categories: ["trending", "upcoming"]
         priority: 4
-      - name: 'BookBub'
-        url: 'https://www.bookbub.com'
-        scope: 'overall'
-        categories: ['trending']
+      - name: "BookBub"
+        url: "https://www.bookbub.com"
+        scope: "overall"
+        categories: ["trending"]
         priority: 5
 
   tier2_secondary:
     romance_specialists:
-      - name: 'Smart Bitches, Trashy Books'
-        url: 'https://smartbitchestrashybooks.com'
-        scope: 'romance'
-        categories: ['reviews', 'trending']
+      - name: "Smart Bitches, Trashy Books"
+        url: "https://smartbitchestrashybooks.com"
+        scope: "romance"
+        categories: ["reviews", "trending"]
         priority: 1
-      - name: 'All About Romance'
-        url: 'https://allaboutromance.com'
-        scope: 'romance'
-        categories: ['upcoming', 'reviews']
+      - name: "All About Romance"
+        url: "https://allaboutromance.com"
+        scope: "romance"
+        categories: ["upcoming", "reviews"]
         priority: 2
-      - name: 'Fated Mates'
-        url: 'https://fatedmates.net'
-        scope: 'romance'
-        categories: ['trending', 'upcoming', 'podcast']
+      - name: "Fated Mates"
+        url: "https://fatedmates.net"
+        scope: "romance"
+        categories: ["trending", "upcoming", "podcast"]
         priority: 3
-      - name: 'She Reads Romance Books'
-        url: 'https://www.shereadsromancebooks.com'
-        scope: 'romance'
-        categories: ['new_releases', 'upcoming', 'trending']
+      - name: "She Reads Romance Books"
+        url: "https://www.shereadsromancebooks.com"
+        scope: "romance"
+        categories: ["new_releases", "upcoming", "trending"]
         priority: 4
-      - name: 'Romance.io'
-        url: 'https://romance.io'
-        scope: 'romance'
-        categories: ['discovery', 'trope_search', 'spice_levels']
+      - name: "Romance.io"
+        url: "https://romance.io"
+        scope: "romance"
+        categories: ["discovery", "trope_search", "spice_levels"]
         priority: 5
-      - name: 'A Love So True'
-        url: 'https://alovesotrue.com'
-        scope: 'romance'
-        categories: ['trending']
+      - name: "A Love So True"
+        url: "https://alovesotrue.com"
+        scope: "romance"
+        categories: ["trending"]
         priority: 6
 
     traditional_media:
-      - name: 'Entertainment Weekly'
-        url: 'https://ew.com'
-        scope: 'overall'
-        categories: ['trending']
+      - name: "Entertainment Weekly"
+        url: "https://ew.com"
+        scope: "overall"
+        categories: ["trending"]
         priority: 1
-      - name: 'POPSUGAR'
-        url: 'https://www.popsugar.com'
-        scope: 'overall'
-        categories: ['trending', 'upcoming']
+      - name: "POPSUGAR"
+        url: "https://www.popsugar.com"
+        scope: "overall"
+        categories: ["trending", "upcoming"]
         priority: 2
-      - name: 'Cosmopolitan'
-        url: 'https://www.cosmopolitan.com'
-        scope: 'overall'
-        categories: ['trending', 'upcoming']
+      - name: "Cosmopolitan"
+        url: "https://www.cosmopolitan.com"
+        scope: "overall"
+        categories: ["trending", "upcoming"]
         priority: 3
-      - name: 'BuzzFeed'
-        url: 'https://www.buzzfeed.com'
-        scope: 'overall'
-        categories: ['trending', 'upcoming']
+      - name: "BuzzFeed"
+        url: "https://www.buzzfeed.com"
+        scope: "overall"
+        categories: ["trending", "upcoming"]
         priority: 4
-      - name: 'Oprah Daily'
-        url: 'https://www.oprahdaily.com'
-        scope: 'overall'
-        categories: ['trending', 'upcoming']
+      - name: "Oprah Daily"
+        url: "https://www.oprahdaily.com"
+        scope: "overall"
+        categories: ["trending", "upcoming"]
         priority: 5
 
     professional_reviews:
-      - name: 'Kirkus Reviews'
-        url: 'https://www.kirkusreviews.com'
-        scope: 'overall'
-        categories: ['new_releases', 'reviews']
+      - name: "Kirkus Reviews"
+        url: "https://www.kirkusreviews.com"
+        scope: "overall"
+        categories: ["new_releases", "reviews"]
         priority: 1
-      - name: 'Publishers Weekly'
-        url: 'https://best-books.publishersweekly.com'
-        scope: 'overall'
-        categories: ['bestsellers', 'new_releases']
+      - name: "Publishers Weekly"
+        url: "https://best-books.publishersweekly.com"
+        scope: "overall"
+        categories: ["bestsellers", "new_releases"]
         priority: 2
-      - name: 'Library Journal'
-        url: 'https://www.libraryjournal.com'
-        scope: 'overall'
-        categories: ['new_releases']
+      - name: "Library Journal"
+        url: "https://www.libraryjournal.com"
+        scope: "overall"
+        categories: ["new_releases"]
         priority: 3
-      - name: 'BookPage'
-        url: 'https://www.bookpage.com'
-        scope: 'overall'
-        categories: ['new_releases']
+      - name: "BookPage"
+        url: "https://www.bookpage.com"
+        scope: "overall"
+        categories: ["new_releases"]
         priority: 4
 
     booktubers_bloggers:
-      - name: 'A Clockwork Reader'
-        url: 'https://www.youtube.com'
-        scope: 'overall'
-        categories: ['trending', 'reviews']
+      - name: "A Clockwork Reader"
+        url: "https://www.youtube.com"
+        scope: "overall"
+        categories: ["trending", "reviews"]
         priority: 1
       - name: "Ava's Romance Books"
-        url: 'https://www.youtube.com'
-        scope: 'romance'
-        categories: ['trending', 'reviews']
+        url: "https://www.youtube.com"
+        scope: "romance"
+        categories: ["trending", "reviews"]
         priority: 2
-      - name: 'Chandler Ainsley'
-        url: 'https://www.youtube.com'
-        scope: 'romance'
-        categories: ['trending', 'reviews']
+      - name: "Chandler Ainsley"
+        url: "https://www.youtube.com"
+        scope: "romance"
+        categories: ["trending", "reviews"]
         priority: 3
       - name: "Loch's Library"
-        url: 'https://www.youtube.com'
-        scope: 'romance'
-        categories: ['trending', 'reviews']
+        url: "https://www.youtube.com"
+        scope: "romance"
+        categories: ["trending", "reviews"]
         priority: 4
       - name: "Victoria's Romance Reads"
-        url: 'https://www.youtube.com'
-        scope: 'romance'
-        categories: ['trending', 'reviews']
+        url: "https://www.youtube.com"
+        scope: "romance"
+        categories: ["trending", "reviews"]
         priority: 5
-      - name: 'Modern Mrs. Darcy'
-        url: 'https://modernmrsdarcy.com'
-        scope: 'overall'
-        categories: ['trending', 'discovery']
+      - name: "Modern Mrs. Darcy"
+        url: "https://modernmrsdarcy.com"
+        scope: "overall"
+        categories: ["trending", "discovery"]
         priority: 6
 
   tier3_extended:
     retailers:
-      - name: 'Audible (US)'
-        url: 'https://www.audible.com'
-        scope: 'overall'
-        categories: ['bestsellers', 'audiobooks']
+      - name: "Audible (US)"
+        url: "https://www.audible.com"
+        scope: "overall"
+        categories: ["bestsellers", "audiobooks"]
         priority: 1
-      - name: 'Audible (UK)'
-        url: 'https://www.audible.co.uk'
-        scope: 'overall'
-        categories: ['bestsellers', 'audiobooks']
+      - name: "Audible (UK)"
+        url: "https://www.audible.co.uk"
+        scope: "overall"
+        categories: ["bestsellers", "audiobooks"]
         priority: 2
-      - name: 'Kobo'
-        url: 'https://www.kobo.com'
-        scope: 'overall'
-        categories: ['bestsellers']
+      - name: "Kobo"
+        url: "https://www.kobo.com"
+        scope: "overall"
+        categories: ["bestsellers"]
         priority: 3
-      - name: 'Indigo (Canada)'
-        url: 'https://www.indigo.ca'
-        scope: 'overall'
-        categories: ['bestsellers']
+      - name: "Indigo (Canada)"
+        url: "https://www.indigo.ca"
+        scope: "overall"
+        categories: ["bestsellers"]
         priority: 4
 
     community_driven:
-      - name: 'Reddit r/RomanceBooks'
-        url: 'https://www.reddit.com/r/RomanceBooks'
-        scope: 'romance'
-        categories: ['discovery', 'community']
+      - name: "Reddit r/RomanceBooks"
+        url: "https://www.reddit.com/r/RomanceBooks"
+        scope: "romance"
+        categories: ["discovery", "community"]
         priority: 1
-      - name: 'Reddit r/FantasyRomance'
-        url: 'https://www.reddit.com/r/FantasyRomance'
-        scope: 'romance'
-        categories: ['discovery', 'community']
+      - name: "Reddit r/FantasyRomance"
+        url: "https://www.reddit.com/r/FantasyRomance"
+        scope: "romance"
+        categories: ["discovery", "community"]
         priority: 2
-      - name: 'Fated Mates Discord Group'
-        url: 'https://drive.google.com'
-        scope: 'romance'
-        categories: ['upcoming', 'community']
+      - name: "Fated Mates Discord Group"
+        url: "https://drive.google.com"
+        scope: "romance"
+        categories: ["upcoming", "community"]
         priority: 3
-      - name: 'Romance Devoured'
-        url: 'https://romancedevoured.com'
-        scope: 'romance'
-        categories: ['discovery']
+      - name: "Romance Devoured"
+        url: "https://romancedevoured.com"
+        scope: "romance"
+        categories: ["discovery"]
         priority: 4
 
     niche_bloggers:
-      - name: 'Beyond the Bookends'
-        url: 'https://www.beyondthebookends.com'
-        scope: 'overall'
-        categories: ['trending']
-      - name: 'Bookish Wayfarer'
-        url: 'https://www.bookishwayfarer.com'
-        scope: 'overall'
-        categories: ['trending']
-      - name: 'The Candid Cover'
-        url: 'https://candidcover.net'
-        scope: 'romance'
-        categories: ['trending']
-      - name: 'Forever She Reads'
-        url: 'https://forevershereads.com'
-        scope: 'romance'
-        categories: ['trending']
-      - name: 'Jeeves Reads Romance'
-        url: 'https://jeevesreads.com'
-        scope: 'romance'
-        categories: ['trending']
-      - name: 'Read & Wright'
-        url: 'https://www.readandwright.com'
-        scope: 'romance'
-        categories: ['trending']
-      - name: 'Under the Covers Book Blog'
-        url: 'https://www.underthecoversbookblog.com'
-        scope: 'romance'
-        categories: ['new_releases', 'upcoming']
-      - name: 'Never Enough Novels'
-        url: 'https://neverenoughnovels.com'
-        scope: 'overall'
-        categories: ['trending', 'new_releases']
+      - name: "Beyond the Bookends"
+        url: "https://www.beyondthebookends.com"
+        scope: "overall"
+        categories: ["trending"]
+      - name: "Bookish Wayfarer"
+        url: "https://www.bookishwayfarer.com"
+        scope: "overall"
+        categories: ["trending"]
+      - name: "The Candid Cover"
+        url: "https://candidcover.net"
+        scope: "romance"
+        categories: ["trending"]
+      - name: "Forever She Reads"
+        url: "https://forevershereads.com"
+        scope: "romance"
+        categories: ["trending"]
+      - name: "Jeeves Reads Romance"
+        url: "https://jeevesreads.com"
+        scope: "romance"
+        categories: ["trending"]
+      - name: "Read & Wright"
+        url: "https://www.readandwright.com"
+        scope: "romance"
+        categories: ["trending"]
+      - name: "Under the Covers Book Blog"
+        url: "https://www.underthecoversbookblog.com"
+        scope: "romance"
+        categories: ["new_releases", "upcoming"]
+      - name: "Never Enough Novels"
+        url: "https://neverenoughnovels.com"
+        scope: "overall"
+        categories: ["trending", "new_releases"]
 
     lifestyle_magazines:
-      - name: 'Elle'
-        url: 'https://www.elle.com'
-        scope: 'overall'
-        categories: ['trending']
-      - name: 'Marie Claire'
-        url: 'https://www.marieclaire.com'
-        scope: 'overall'
-        categories: ['upcoming']
-      - name: 'Good Housekeeping'
-        url: 'https://www.goodhousekeeping.com'
-        scope: 'overall'
-        categories: ['trending']
+      - name: "Elle"
+        url: "https://www.elle.com"
+        scope: "overall"
+        categories: ["trending"]
+      - name: "Marie Claire"
+        url: "https://www.marieclaire.com"
+        scope: "overall"
+        categories: ["upcoming"]
+      - name: "Good Housekeeping"
+        url: "https://www.goodhousekeeping.com"
+        scope: "overall"
+        categories: ["trending"]
       - name: "Harper's Bazaar (Malaysia)"
-        url: 'https://harpersbazaar.my'
-        scope: 'overall'
-        categories: ['trending']
-      - name: 'People'
-        url: 'https://people.com'
-        scope: 'overall'
-        categories: ['trending']
+        url: "https://harpersbazaar.my"
+        scope: "overall"
+        categories: ["trending"]
+      - name: "People"
+        url: "https://people.com"
+        scope: "overall"
+        categories: ["trending"]
 
 # Search patterns for AI assistants
 search_patterns:
   by_category:
     bestsellers:
-      - '{source} bestsellers {year}'
-      - '{source} top books {month} {year}'
-      - '{source} most popular books'
+      - "{source} bestsellers {year}"
+      - "{source} top books {month} {year}"
+      - "{source} most popular books"
 
     trending:
-      - '{source} trending books {genre}'
-      - '{source} viral books booktok'
-      - '{source} everyone is reading'
+      - "{source} trending books {genre}"
+      - "{source} viral books booktok"
+      - "{source} everyone is reading"
 
     new_releases:
-      - '{source} new releases {month} {year}'
-      - '{source} upcoming books {genre}'
-      - '{source} latest releases'
+      - "{source} new releases {month} {year}"
+      - "{source} upcoming books {genre}"
+      - "{source} latest releases"
 
     discovery:
-      - '{source} book recommendations {genre}'
-      - '{source} if you liked {book_title}'
-      - '{source} books like {similar_book}'
+      - "{source} book recommendations {genre}"
+      - "{source} if you liked {book_title}"
+      - "{source} books like {similar_book}"
 
   by_genre:
     romance:
-      - 'romance books trending on {source}'
-      - '{source} spicy romance recommendations'
-      - '{source} hockey romance books'
-      - '{source} enemies to lovers books'
+      - "romance books trending on {source}"
+      - "{source} spicy romance recommendations"
+      - "{source} hockey romance books"
+      - "{source} enemies to lovers books"
 
     fantasy:
-      - 'fantasy romance {source} recommendations'
-      - '{source} romantasy trending books'
-      - '{source} fantasy books like fourth wing'
+      - "fantasy romance {source} recommendations"
+      - "{source} romantasy trending books"
+      - "{source} fantasy books like fourth wing"
 
 # Priority weights for recommendation algorithm
 priority_weights:

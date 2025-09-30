@@ -1,0 +1,31 @@
+{
+  "nodeModulesDir": "auto",
+  "tasks": {
+    "lint": "deno lint",
+    "fmt": "deno fmt",
+    "test": "deno test -A"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"],
+      "include": ["no-unused-vars", "no-explicit-any", "explicit-function-return-type"]
+    },
+    "exclude": ["node_modules", ".git", "supabase/.temp"]
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "proseWrap": "preserve",
+    "exclude": ["node_modules", ".git", "supabase/.temp"]
+  },
+  "test": {
+    "include": ["**/*_test.ts", "**/*.test.ts"]
+  },
+  "imports": {
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2",
+    "grammy": "https://deno.land/x/grammy/mod.ts"
+  }
+}
