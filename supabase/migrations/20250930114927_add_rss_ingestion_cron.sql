@@ -14,6 +14,16 @@ CREATE EXTENSION IF NOT EXISTS pg_net;
 -- supabase secrets set project_url="https://YOUR_PROJECT_REF.supabase.co"
 -- supabase secrets set anon_key="YOUR_ANON_KEY"
 
+-- Unschedule any existing job with the same name (for idempotency)
+-- Use DO block to handle case where job doesn't exist
+DO $$
+BEGIN
+  PERFORM cron.unschedule('rss-ingestion-daily');
+EXCEPTION
+  WHEN others THEN
+    NULL; -- Job doesn't exist, ignore error
+END $$;
+
 -- Schedule RSS ingestion to run daily at 2 AM UTC
 SELECT cron.schedule(
   'rss-ingestion-daily',              -- Job name
