@@ -24,6 +24,9 @@ EXCEPTION
     NULL; -- Job doesn't exist, ignore error
 END $$;
 
+-- Clean up any lingering cron.job rows with the same name (covers legacy schedules)
+DELETE FROM cron.job WHERE jobname = 'rss-ingestion-daily';
+
 -- Schedule RSS ingestion to run daily at 2 AM UTC
 SELECT cron.schedule(
   'rss-ingestion-daily',              -- Job name
