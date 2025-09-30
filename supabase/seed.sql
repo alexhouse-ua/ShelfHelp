@@ -1,19 +1,19 @@
 -- Seed data for lookup tables (Story 1.2)
 
 -- Insert initial genres
-INSERT INTO genres (id, name) VALUES
-(1, 'Fantasy'),
-(2, 'Science Fiction'),
-(3, 'Mystery & Crime'),
-(4, 'Thriller & Suspense'),
-(5, 'Horror'),
-(6, 'Romance'),
-(7, 'Contemporary Fiction'),
-(8, 'Historical Fiction'),
-(9, 'Literary Fiction'),
-(10, 'Young Adult');
+INSERT INTO genres (name) VALUES
+('Fantasy'),
+('Science Fiction'),
+('Mystery & Crime'),
+('Thriller & Suspense'),
+('Horror'),
+('Romance'),
+('Contemporary Fiction'),
+('Historical Fiction'),
+('Literary Fiction'),
+('Young Adult');
 
--- Insert spice levels
+-- Insert spice levels (need explicit IDs for referential integrity in existing code)
 INSERT INTO spice_levels (id, label, description) VALUES
 (1, '🌶️ Glimpses and kisses', 'Meaningful glances and perhaps a kiss, but no sex on and off page.'),
 (2, '🌶️🌶️ Behind closed doors', 'At least one intimate scene occurs, but without the reader present.'),
@@ -21,19 +21,22 @@ INSERT INTO spice_levels (id, label, description) VALUES
 (4, '🌶️🌶️🌶️🌶️ Explicit open door', 'At least two intimate scenes, explicit language with a variety of sexual acts.'),
 (5, '🌶️🌶️🌶️🌶️🌶️ Explicit and plentiful', 'Several explicit scenes, a variety of adventurous acts, dotted throughout the book.');
 
--- Insert sample subgenres for Fantasy
-INSERT INTO subgenres (genre_id, name) VALUES
-(1, 'Epic Fantasy'),
-(1, 'Urban Fantasy'),
-(1, 'Dark Fantasy'),
-(1, 'High Fantasy');
+-- Sync sequence for spice_levels after manual ID insertion
+SELECT setval('spice_levels_id_seq', (SELECT MAX(id) FROM spice_levels));
 
--- Insert sample tropes for Romance
+-- Insert sample subgenres for Fantasy (using genre lookup)
+INSERT INTO subgenres (genre_id, name) VALUES
+((SELECT id FROM genres WHERE name = 'Fantasy'), 'Epic Fantasy'),
+((SELECT id FROM genres WHERE name = 'Fantasy'), 'Urban Fantasy'),
+((SELECT id FROM genres WHERE name = 'Fantasy'), 'Dark Fantasy'),
+((SELECT id FROM genres WHERE name = 'Fantasy'), 'High Fantasy');
+
+-- Insert sample tropes for Romance (using genre lookup)
 INSERT INTO tropes (genre_id, name) VALUES
-(6, 'Enemies to Lovers'),
-(6, 'Forced Proximity'),
-(6, 'Second Chance Romance'),
-(6, 'Fake Relationship');
+((SELECT id FROM genres WHERE name = 'Romance'), 'Enemies to Lovers'),
+((SELECT id FROM genres WHERE name = 'Romance'), 'Forced Proximity'),
+((SELECT id FROM genres WHERE name = 'Romance'), 'Second Chance Romance'),
+((SELECT id FROM genres WHERE name = 'Romance'), 'Fake Relationship');
 
 -- Insert sample recommendation sources
 INSERT INTO recommendation_sources (name, url, scope, categories, priority) VALUES

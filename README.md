@@ -155,7 +155,7 @@ Configure these in your GitHub repository settings (Settings → Secrets and var
 
 ## Project Structure
 
-```
+```text
 ShelfHelp/
 ├── .github/workflows/     # GitHub Actions CI/CD
 │   ├── ci.yml            # Pull request validation
