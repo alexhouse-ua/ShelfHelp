@@ -1,5 +1,5 @@
 // Setup type definitions for built-in Supabase Runtime APIs
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { Bot, InlineKeyboard, webhookCallback } from "https://deno.land/x/grammy/mod.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { extractBookInfo } from "../_shared/gemini-client.ts";
