@@ -1,0 +1,43 @@
+schema: 1
+story: "1.4"
+story_title: "Story 1.4: Basic RSS Ingestion"
+gate: PASS
+status_reason: "Functional flow and test coverage are in place, and credential rotation has been confirmed."
+reviewer: "Quinn (Test Architect)"
+updated: "2025-09-30T21:00:00Z"
+
+top_issues: []
+
+waiver:
+  active: false
+
+quality_score: 100
+expires: "2025-10-14T21:00:00Z"
+
+evidence:
+  tests_reviewed: 12
+  risks_identified: 0
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: "Secrets managed via environment and confirmed rotated."
+  performance:
+    status: PASS
+    notes: "Feed parsing and upsert path operate within expected bounds."
+  reliability:
+    status: PASS
+    notes: "Deterministic unit suite covers happy path, error handling, and reruns; legacy integration gated behind explicit flag."
+  maintainability:
+    status: PASS
+    notes: "Dependency injection seams and test harness improvements keep the function testable without production credentials."
+
+recommendations:
+  immediate: []
+  future:
+    - action: "Consider pruning or replacing the legacy test suite once the new unit/integration split is fully adopted."
+      refs:
+        - "tests/rss_ingestion_test.ts"
