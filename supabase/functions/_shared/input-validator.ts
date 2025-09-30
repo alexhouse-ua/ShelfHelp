@@ -16,10 +16,13 @@ const MAX_TITLE_LENGTH = 500;
 const MAX_AUTHOR_LENGTH = 200;
 
 /**
- * Validate and sanitize book title and author inputs
- * @param title - Book title
- * @param author - Author name
- * @returns Validation result with sanitized values
+ * Validate and sanitize user-provided book title and author.
+ *
+ * Performs presence and length checks and returns cleaned values when validation succeeds.
+ *
+ * @param title - The raw book title provided by the user (may include surrounding whitespace or control characters)
+ * @param author - The raw author name provided by the user (may be empty; may include surrounding whitespace or control characters)
+ * @returns `ValidationResult` with `valid: true` and `sanitized` containing cleaned `title` and `author` when inputs pass validation; otherwise `valid: false` and an `error` message
  */
 export function validateBookInput(title: string, author: string): ValidationResult {
   // Title validation
@@ -48,10 +51,12 @@ export function validateBookInput(title: string, author: string): ValidationResu
 }
 
 /**
- * Sanitize text for use in API calls and URLs
- * - Remove control characters
- * - Normalize whitespace
- * - Preserve valid punctuation
+ * Normalize and clean a text string for safe use in API calls and URLs.
+ *
+ * Removes control characters, collapses consecutive whitespace into single spaces, and trims surrounding whitespace.
+ *
+ * @param text - The input string to sanitize
+ * @returns The sanitized string with control characters removed, internal whitespace normalized, and trimmed
  */
 function sanitizeText(text: string): string {
   return (
@@ -64,9 +69,10 @@ function sanitizeText(text: string): string {
 }
 
 /**
- * Sanitize error messages before showing to users
- * - Remove API keys, tokens, and internal details
- * - Keep user-friendly error descriptions
+ * Redacts sensitive keys, tokens, and long API-key-like sequences from an error message.
+ *
+ * @param error - The original error message potentially containing sensitive data
+ * @returns The error message with sensitive values replaced by `***`
  */
 export function sanitizeErrorMessage(error: string): string {
   return error

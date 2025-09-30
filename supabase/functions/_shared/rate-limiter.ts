@@ -37,7 +37,15 @@ export const openLibraryLimiter = new RateLimiter({ requestsPerSecond: 1 });
 export const goodreadsLimiter = new RateLimiter({ requestsPerSecond: 0.3 }); // ~2-3 sec delays
 
 /**
- * Exponential backoff retry utility for 429 errors
+ * Retry an asynchronous operation when it fails with an HTTP 429 (rate limit) using exponential backoff.
+ *
+ * Attempts the provided `fn` up to `maxRetries` times, waiting progressively longer between retries when the error
+ * is an HTTP `Response` with status `429`. Non-429 errors are rethrown immediately.
+ *
+ * @param fn - Function that performs the operation to retry.
+ * @param maxRetries - Maximum number of attempts (including the first). Defaults to 3.
+ * @param initialDelayMs - Initial backoff delay in milliseconds; each retry doubles the delay. Defaults to 1000.
+ * @returns The resolved value from a successful invocation of `fn`.
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,

@@ -33,7 +33,11 @@ export interface StateData {
 const STATE_TIMEOUT_MINUTES = 15;
 
 /**
- * Save or update conversational state for a chat
+ * Store or update the conversational state for a chat.
+ *
+ * @param stateData - The conversational state payload (validated object containing workflow/step and other state fields)
+ * @param context - Optional current context label to associate with the state
+ * @returns `{ success: true }` on success, `{ success: false, error: string }` on failure
  */
 export async function saveState(
   supabase: SupabaseClient,
@@ -75,7 +79,13 @@ export async function saveState(
 }
 
 /**
- * Retrieve conversational state for a chat
+ * Load the active conversational state for a given chat.
+ *
+ * If a stored state exists and its last interaction is within the timeout window, the state is returned;
+ * if no state exists or it has expired, the function returns `null` and expired state is removed.
+ *
+ * @param chatId - The numeric chat identifier to retrieve state for
+ * @returns The stored ConversationalState for `chatId`, or `null` if not found or expired
  */
 export async function getState(
   supabase: SupabaseClient,
@@ -116,7 +126,10 @@ export async function getState(
 }
 
 /**
- * Clear conversational state for a chat
+ * Delete the conversational state record for a given chat.
+ *
+ * @param chatId - The chat's numeric identifier whose state should be removed
+ * @returns An object with `success: true` when deletion succeeded; on failure `success: false` and an `error` message
  */
 export async function cleanupState(
   supabase: SupabaseClient,
@@ -138,7 +151,9 @@ export async function cleanupState(
 }
 
 /**
- * Clean up expired conversational states (run periodically)
+ * Remove conversational state records whose `last_interaction` is older than the configured timeout.
+ *
+ * @returns An object with `success` indicating operation outcome, `cleaned` as the number of deleted rows, and an optional `error` message when `success` is `false`.
  */
 export async function cleanupExpiredStates(
   supabase: SupabaseClient,

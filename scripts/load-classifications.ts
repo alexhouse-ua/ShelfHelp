@@ -49,6 +49,13 @@ interface RecommendationSourcesData {
   };
 }
 
+/**
+ * Loads classification data from project-specs/classifications.yaml into the database.
+ *
+ * Parses classifications.yaml and inserts records into the genres, subgenres, tropes, and spice_levels tables.
+ * Builds an internal mapping from genre name to its inserted id to associate subgenres and tropes with their parent genre.
+ * Per-item insertion errors are logged and processing continues; trope duplicate errors are tolerated.
+ */
 async function loadClassifications(): Promise<void> {
   console.log("📚 Loading classifications data...");
 
@@ -139,6 +146,11 @@ async function loadClassifications(): Promise<void> {
   console.log("\n✅ Classifications loaded successfully!");
 }
 
+/**
+ * Loads recommendation sources from project-specs/recommendation-sources.yaml and inserts them into the recommendation_sources table.
+ *
+ * Reads the YAML file, iterates through tiers and categories, inserts each source record (name, url, scope, categories, priority), logs per-item insertion failures and continues, and logs a final count of successfully inserted sources.
+ */
 async function loadRecommendationSources(): Promise<void> {
   console.log("\n📊 Loading recommendation sources...");
 

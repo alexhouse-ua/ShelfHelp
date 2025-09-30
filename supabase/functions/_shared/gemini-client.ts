@@ -20,9 +20,10 @@ export interface GeminiError {
 }
 
 /**
- * Extract book title and author from natural language input using Gemini Flash
- * @param userInput - Raw natural language text from user
- * @returns Extracted book data or error
+ * Parse a user's message to identify a book title, author, and confidence using the Google Gemini Flash API.
+ *
+ * @param userInput - The raw user-provided text that may contain book information
+ * @returns A `BookExtractionResult` with `title`, `author`, and `confidence` on success, or a `GeminiError` containing an `error` message and optional `code` on failure
  */
 export async function extractBookInfo(
   userInput: string,
@@ -101,7 +102,12 @@ export async function extractBookInfo(
 }
 
 /**
- * Build prompt for book information extraction
+ * Create a prompt instructing Gemini to extract a book's title, author, and confidence as a strict JSON object.
+ *
+ * The returned prompt asks the model to produce only a valid JSON object with fields `"title"`, `"author"`, and `"confidence"` (one of `"high"`, `"medium"`, `"low"`), and to return an explicit empty result `{"title": "", "author": "", "confidence": "low"}` when no book information is present.
+ *
+ * @param userInput - The user message to embed in the prompt for extraction
+ * @returns A string prompt that requests only valid JSON containing `title`, `author`, and `confidence` based on the provided `userInput`
  */
 function buildExtractionPrompt(userInput: string): string {
   return `Extract the book title and author from the following user message. Return ONLY a JSON object with "title", "author", and "confidence" fields. The confidence should be "high", "medium", or "low" based on how clearly the book information is stated.
@@ -114,7 +120,10 @@ Return only valid JSON, no other text.`;
 }
 
 /**
- * Parse Gemini's JSON response into BookExtractionResult
+ * Parse Gemini's JSON output into a validated book extraction result.
+ *
+ * @param textContent - Raw text returned by Gemini; may contain a JSON object or be wrapped in Markdown code fences (e.g., ```json ... ```).
+ * @returns A `BookExtractionResult` with trimmed `title` and `author` and `confidence` set to `"high" | "medium" | "low"` on success, or a `GeminiError` with `code: "PARSE_ERROR"` and an explanatory `error` message on failure.
  */
 function parseExtractionResponse(textContent: string): BookExtractionResult | GeminiError {
   try {

@@ -273,7 +273,16 @@ bot.on("callback_query:data", async (ctx) => {
 });
 
 /**
- * Process book addition from natural language input
+ * Process a user's natural-language book description, resolve the book, and prompt or save the result.
+ *
+ * Attempts to extract title and author from `userInput`, validates the extraction, searches external sources,
+ * and then either saves the single matched book to the database or stores search results in conversational state
+ * and sends an inline keyboard prompting the user to choose among multiple matches. Replies are sent to the user
+ * for errors, guidance, and status updates.
+ *
+ * @param chatId - The Telegram chat identifier for the user session
+ * @param userInput - The freeform natural-language description provided by the user
+ * @param requestId - Correlation ID used for structured logging and tracing
  */
 async function processBookAddition(
   // deno-lint-ignore no-explicit-any
@@ -391,7 +400,14 @@ async function processBookAddition(
 }
 
 /**
- * Handle user's book selection from inline keyboard
+ * Process a user's selection from the inline keyboard, persist the chosen book, and notify the user.
+ *
+ * Looks up saved search results for the chat, validates the selected index, replies with an error message if the session expired or the selection is invalid, clears the conversation state, and saves the chosen book to the database.
+ *
+ * @param ctx - Telegram context used to reply to the user
+ * @param chatId - Telegram chat identifier associated with the saved search results
+ * @param bookIndex - Zero-based index of the chosen book within the saved search results
+ * @param requestId - Traceable request identifier for logging and correlation
  */
 async function handleBookSelection(
   // deno-lint-ignore no-explicit-any
@@ -423,7 +439,19 @@ async function handleBookSelection(
 }
 
 /**
- * Save book to database and send confirmation
+ * Insert a book record for a chat user and send a confirmation message to the chat.
+ *
+ * Inserts the provided book metadata into the `books` table (sets `status` to "pending",
+ * `user_shelves` to ["to-read"], and `user_date_added` to the current timestamp), then
+ * notifies the user in chat. On successful save the function sends a confirmation that
+ * includes title and author and adds optional metadata (page count, Goodreads ID). If a
+ * cover image URL is available the confirmation is sent as a photo with a caption;
+ * otherwise it is sent as formatted text. Database errors or unexpected exceptions cause
+ * a user-facing failure message and are logged.
+ *
+ * @param chatId - Telegram chat identifier where the confirmation will be sent
+ * @param book - Book metadata to persist and display (title, author, isbn, page_count, cover_image_url, etc.)
+ * @param requestId - Correlation identifier used for structured logging
  */
 async function saveBookToDatabase(
   // deno-lint-ignore no-explicit-any

@@ -27,7 +27,11 @@ export interface SearchResult {
 }
 
 /**
- * Search for book across multiple sources and merge results
+ * Orchestrates a book search across Open Library and Google Books, deduplicates results, and attempts optional Goodreads enrichment.
+ *
+ * @param title - The book title to search for
+ * @param author - The book author to narrow the search
+ * @returns A SearchResult containing merged, optionally enriched `BookMetadata[]` when `success` is `true`. On failure `success` is `false` and `error`/`errorCode` describe the problem (e.g., `NOT_FOUND` when no primary-source results were found, `SEARCH_ERROR` for unexpected failures).
  */
 export async function searchBook(title: string, author: string): Promise<SearchResult> {
   try {
@@ -78,7 +82,9 @@ export async function searchBook(title: string, author: string): Promise<SearchR
 }
 
 /**
- * Search Open Library API
+ * Query Open Library for book metadata matching a title and optional author.
+ *
+ * @returns A SearchResult containing up to five BookMetadata objects in `books` when successful; on failure `error` and `errorCode` are set. Possible `errorCode` values include `API_ERROR` (non-OK API response), `NOT_FOUND` (no results), and `NETWORK_ERROR` (request/processing failure).
  */
 async function searchOpenLibrary(title: string, author: string): Promise<SearchResult> {
   await openLibraryLimiter.throttle();
@@ -123,7 +129,13 @@ async function searchOpenLibrary(title: string, author: string): Promise<SearchR
 }
 
 /**
- * Search Google Books API
+ * Search Google Books for volumes matching the provided title and optional author and map results to BookMetadata.
+ *
+ * Performs a query limited to five results, prefers `ISBN_13` when present, and extracts common volume fields (title, author, ISBN, page count, cover image, publisher, publication date). Returns a `NOT_FOUND` result when no items are found and an `API_ERROR` result for non-OK API responses.
+ *
+ * @param title - The book title to search for (used as `intitle:` in the query)
+ * @param author - Optional author name to narrow the search (used as `inauthor:` in the query)
+ * @returns `SearchResult` with `books` containing up to five `BookMetadata` entries on success; on failure `success` is `false` and `errorCode` will be one of `NOT_FOUND`, `API_ERROR`, or `NETWORK_ERROR`
  */
 async function searchGoogleBooks(title: string, author: string): Promise<SearchResult> {
   try {
@@ -175,8 +187,12 @@ async function searchGoogleBooks(title: string, author: string): Promise<SearchR
 }
 
 /**
- * Attempt to scrape Goodreads ID for each book
- * This is optional and can fail gracefully
+ * Enriches each book with Goodreads ID and link when a match is found.
+ *
+ * For each input book this function attempts to scrape a Goodreads ID/link; failures for individual books are non-fatal and leave that book unchanged. When Goodreads data is attached, `"goodreads"` is appended to the book's `sources`.
+ *
+ * @param books - Array of book metadata objects to attempt enrichment for
+ * @returns A new array of `BookMetadata` where books that matched on Goodreads include `goodreads_id`, `goodreads_link`, and `"goodreads"` in `sources`; other books are unchanged
  */
 async function enrichWithGoodreads(books: BookMetadata[]): Promise<BookMetadata[]> {
   const enrichedBooks = await Promise.all(
@@ -205,8 +221,11 @@ async function enrichWithGoodreads(books: BookMetadata[]): Promise<BookMetadata[
 }
 
 /**
- * Scrape Goodreads search results for book ID
- * Returns null if scraping fails (non-critical)
+ * Attempts to find a Goodreads book ID and direct book link by querying Goodreads search with the provided title and author.
+ *
+ * @param title - The book title to search for
+ * @param author - The book author to search for
+ * @returns An object containing the Goodreads numeric `id` and a direct `link` to the book page if found, `null` otherwise.
  */
 async function scrapeGoodreadsId(
   title: string,
@@ -248,8 +267,12 @@ async function scrapeGoodreadsId(
 }
 
 /**
- * Merge duplicate books from different sources
- * Books are considered duplicates if title and author match (case-insensitive)
+ * Deduplicates and merges book metadata entries by title and author.
+ *
+ * Merges entries that refer to the same book (case-insensitive title and author). For duplicates, missing fields are filled from other entries when available and source lists are combined without duplicates.
+ *
+ * @param books - Array of BookMetadata objects to deduplicate and merge
+ * @returns An array of merged BookMetadata objects with aggregated sources
  */
 function mergeDuplicates(books: BookMetadata[]): BookMetadata[] {
   const bookMap = new Map<string, BookMetadata>();
