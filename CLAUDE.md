@@ -1,10 +1,10 @@
 ### Searching and Reading Files
 
-ast-grep is always preferred.
+Always use ast-grep when searching codebase.
 
 ### Token Efficiency
 
-Minimize token usage by following project-specs/token-efficiency.md in all tasks
+Minimize token usage by following project-specs/token-efficiency.md in all tasks and responses
 
 ### Development Resources
 
