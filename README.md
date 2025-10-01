@@ -91,6 +91,110 @@ ShelfHelp helps readers discover their next great read through conversational AI
    supabase functions serve
    ```
 
+## Data Loading and Enrichment
+
+### Lookup Data Loading
+
+Populate lookup tables (genres, subgenres, tropes, spice_levels, recommendation_sources) from YAML files:
+
+```bash
+# Using Supabase CLI (local or production)
+supabase functions invoke seed-lookup-data --env-file supabase/.env.local
+```
+
+**Data Sources:**
+
+- `project-specs/classifications.yaml` - Genres, subgenres, tropes, spice levels
+- `project-specs/recommendation-sources.yaml` - Book recommendation sources
+
+**Updating YAML Data:**
+
+1. Edit YAML files in `project-specs/`
+2. Re-run the `seed-lookup-data` function (UPSERT handles duplicates)
+
+### Historical Data Import
+
+Import historical reading data from Goodreads CSV export:
+
+```bash
+# One-time CSV backfill
+supabase functions invoke csv-backfill --env-file supabase/.env.local
+```
+
+**CSV Column Mappings:**
+
+| Goodreads CSV Column | Database Field       | Notes                                            |
+| -------------------- | -------------------- | ------------------------------------------------ |
+| `Book Id`            | `goodreads_id`       | Unique identifier                                |
+| `Title`              | `title`              | Book title                                       |
+| `Author`             | `author`             | Book author                                      |
+| `ISBN13` / `ISBN`    | `isbn`               | Prefers ISBN13, falls back to ISBN               |
+| `My Rating`          | `user_rating`        | 1-5 rating                                       |
+| `Date Read`          | `user_date_finished` | Parsed from MM/DD/YY format                      |
+| `Date Added`         | `user_date_added`    | Parsed from MM/DD/YY format                      |
+| `Publisher`          | `publisher`          | Publisher name                                   |
+| `Number of Pages`    | `page_count`         | Page count                                       |
+| `Year Published`     | `publication_date`   | Year only (YYYY-01-01)                           |
+| `Status`             | `status`             | Maps: "read" → "finished", "to-read" → "to_read" |
+
+**Date Format:** MM/DD/YY (e.g., "9/20/25" → 2025-09-20)
+
+- Years 00-49 → 2000-2049
+- Years 50-99 → 1950-1999
+
+**Idempotency:** Re-running the import updates existing books based on `goodreads_id` (UPSERT).
+
+### Metadata Enrichment
+
+Enrich book records with AI-generated metadata (genres, tropes, themes, pacing, tone, writing style, POV, spice level):
+
+```bash
+# Enrich a specific book by ID
+curl -X POST https://<project-ref>.supabase.co/functions/v1/enrich-metadata \
+  -H "Authorization: Bearer <anon-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"book_id": "<uuid>"}'
+```
+
+**Enrichment Fields:**
+
+- `genres_primary` (array) - Primary genres
+- `genres_secondary` (array) - Secondary genres
+- `tropes` (array) - Story tropes
+- `themes` (array) - Thematic elements
+- `pacing` (string) - slow/medium/fast
+- `tone` (string) - light/dark/mixed
+- `writing_style` (string) - descriptive/minimalist/lyrical/etc
+- `pov_type` (string) - first-person/third-person-limited/etc
+- `pov_gender` (string) - male/female/multiple/neutral/unknown
+- `spice_level` (string) - none/low/medium/high
+
+**API Requirements:**
+
+- Requires `GOOGLE_GEMINI_API_KEY` environment variable
+- Uses Gemini 1.5 Pro for complex metadata analysis
+- Retry logic with exponential backoff for rate limits
+
+### Troubleshooting
+
+**CSV Import Issues:**
+
+- **Invalid date format**: Ensure dates are in MM/DD/YY format
+- **Missing goodreads_id**: Rows without Book Id are skipped
+- **Duplicate imports**: UPSERT prevents duplicates; check response summary for `booksUpdated` count
+
+**YAML Seeding Issues:**
+
+- **Invalid YAML structure**: Validate YAML syntax at [yamllint.com](http://www.yamllint.com/)
+- **Missing required fields**: Ensure `Genres`, `Spice_Levels`, `Tropes` sections exist in classifications.yaml
+- **Foreign key errors**: Genres must be seeded before tropes/subgenres
+
+**Enrichment Issues:**
+
+- **API rate limits**: Gemini API has rate limits; retry logic handles this automatically
+- **Invalid JSON response**: Check Gemini API status and model availability
+- **Missing API key**: Ensure `GOOGLE_GEMINI_API_KEY` is set in environment
+
 ## Testing
 
 ### Running Tests Locally

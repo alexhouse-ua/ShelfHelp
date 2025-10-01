@@ -66,8 +66,6 @@ interface RSSItem {
   user_rating?: string;
   user_read_at?: string;
   user_date_added?: string;
-  user_shelves?: string;
-  book_description?: string | { __cdata?: string };
   publisher?: string;
 }
 
@@ -85,26 +83,34 @@ function parseRSSDate(dateStr?: string): string | null {
 }
 
 /**
- * Parse user shelves from comma-separated string to array
+ * Parse series information from book title
+ * Examples:
+ *   "The Good Girl Effect (Salacious Legacy, #1)" → {title: "The Good Girl Effect", series: "Salacious Legacy", number: 1}
+ *   "Stand Alone Book" → {title: "Stand Alone Book", series: null, number: null}
  */
-function parseUserShelves(shelvesStr?: string): string[] | null {
-  if (!shelvesStr) return null;
-  return shelvesStr
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-}
+function parseSeriesFromTitle(fullTitle: string): {
+  title: string;
+  series_name: string | null;
+  series_number: number | null;
+} {
+  // Pattern: "Book Title (Series Name, #N)" or "Book Title (Series Name #N)"
+  const seriesPattern = /^(.+?)\s*\(([^,)]+?),?\s*#(\d+(?:\.\d+)?)\)\s*$/;
+  const match = fullTitle.match(seriesPattern);
 
-/**
- * Extract CDATA content if present
- */
-function extractCDATA(field?: string | { __cdata?: string }): string | null {
-  if (!field) return null;
-  if (typeof field === "string") return field;
-  if (typeof field === "object" && "__cdata" in field) {
-    return field.__cdata || null;
+  if (match) {
+    return {
+      title: match[1].trim(),
+      series_name: match[2].trim(),
+      series_number: parseFloat(match[3]),
+    };
   }
-  return null;
+
+  // No series information found
+  return {
+    title: fullTitle.trim(),
+    series_name: null,
+    series_number: null,
+  };
 }
 
 /**
@@ -117,36 +123,39 @@ export function mapRSSItemToBook(item: RSSItem): {
   isbn: string | null;
   publication_date: string | null;
   page_count: number | null;
+  series_name: string | null;
+  series_number: number | null;
   cover_image_url: string | null;
   goodreads_link: string | null;
   user_rating: number | null;
   user_date_finished: string | null;
   user_date_added: string | null;
-  user_shelves: string[] | null;
-  ai_summary: string | null;
   publisher: string | null;
-  status: "pending";
+  status: "to_read";
 } {
   const userRating = item.user_rating ? parseInt(item.user_rating, 10) : null;
   const pageCount = item.book?.num_pages ? parseInt(item.book.num_pages, 10) : null;
   const publicationYear = item.book_published ? parseInt(item.book_published, 10) : null;
 
+  // Parse series information from title
+  const { title, series_name, series_number } = parseSeriesFromTitle(item.title || "");
+
   return {
     goodreads_id: item.book_id ? parseInt(item.book_id, 10) : null,
-    title: item.title || null,
+    title: title,
     author: item.author_name || null,
     isbn: item.isbn || null,
     publication_date: publicationYear ? `${publicationYear}-01-01` : null,
     page_count: pageCount,
+    series_name: series_name,
+    series_number: series_number,
     cover_image_url: item.book_large_image_url || item.book_image_url || null,
     goodreads_link: item.link || null,
     user_rating: userRating && userRating >= 1 && userRating <= 5 ? userRating : null,
     user_date_finished: parseRSSDate(item.user_read_at),
     user_date_added: parseRSSDate(item.user_date_added),
-    user_shelves: parseUserShelves(item.user_shelves),
-    ai_summary: extractCDATA(item.book_description),
     publisher: item.publisher || null,
-    status: "pending" as const,
+    status: "to_read" as const,
   };
 }
 

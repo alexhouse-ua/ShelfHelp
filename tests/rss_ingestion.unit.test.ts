@@ -29,7 +29,6 @@ const SAMPLE_RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <user_rating>4</user_rating>
       <user_read_at>Sun, 01 Jan 2025 00:00:00 -0800</user_read_at>
       <user_date_added>Wed, 15 Dec 2024 10:30:00 -0800</user_date_added>
-      <user_shelves>read, favorites</user_shelves>
       <book_description><![CDATA[Description one]]></book_description>
     </item>
     <item>
@@ -44,7 +43,6 @@ const SAMPLE_RSS_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <book_image_url>https://example.com/cover2.jpg</book_image_url>
       <link>https://goodreads.com/book/67890</link>
       <user_rating>5</user_rating>
-      <user_shelves>read</user_shelves>
     </item>
   </channel>
 </rss>`;
@@ -318,7 +316,7 @@ Deno.test("RSS Ingestion Unit Tests", async (t) => {
   await t.step("mapRSSItemToBook: correctly maps all fields", () => {
     const item = {
       book_id: "12345",
-      title: "Test Book",
+      title: "Test Book (My Series, #2)",
       author_name: "Test Author",
       isbn: "1234567890",
       book_published: "2020",
@@ -328,8 +326,6 @@ Deno.test("RSS Ingestion Unit Tests", async (t) => {
       user_rating: "4",
       user_read_at: "Sun, 01 Jan 2025 00:00:00 -0800",
       user_date_added: "Wed, 15 Dec 2024 10:30:00 -0800",
-      user_shelves: "read, favorites",
-      book_description: { __cdata: "Test description" },
       publisher: "Test Publisher",
     };
 
@@ -337,6 +333,8 @@ Deno.test("RSS Ingestion Unit Tests", async (t) => {
 
     assertEquals(mapped.goodreads_id, 12345);
     assertEquals(mapped.title, "Test Book");
+    assertEquals(mapped.series_name, "My Series");
+    assertEquals(mapped.series_number, 2);
     assertEquals(mapped.author, "Test Author");
     assertEquals(mapped.isbn, "1234567890");
     assertEquals(mapped.publication_date, "2020-01-01");
@@ -346,10 +344,8 @@ Deno.test("RSS Ingestion Unit Tests", async (t) => {
     assertEquals(mapped.user_rating, 4);
     assertEquals(mapped.user_date_finished, "2025-01-01T08:00:00.000Z");
     assertEquals(mapped.user_date_added, "2024-12-15T18:30:00.000Z");
-    assertEquals(mapped.user_shelves, ["read", "favorites"]);
-    assertEquals(mapped.ai_summary, "Test description");
     assertEquals(mapped.publisher, "Test Publisher");
-    assertEquals(mapped.status, "pending");
+    assertEquals(mapped.status, "to_read");
   });
 
   // Restore env

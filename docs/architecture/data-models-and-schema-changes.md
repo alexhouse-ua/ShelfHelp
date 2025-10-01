@@ -72,8 +72,7 @@ CREATE TABLE books (
     cover_image_url TEXT,
     goodreads_link TEXT,
 
-    -- User Data (from Goodreads RSS)
-    user_shelves TEXT[],
+    -- User Data
     user_rating INTEGER CHECK (user_rating >= 1 AND user_rating <= 5),
     user_date_added TIMESTAMP WITH TIME ZONE,
     user_date_finished TIMESTAMP WITH TIME ZONE,
@@ -95,7 +94,7 @@ CREATE TABLE books (
     spice_level TEXT,
 
     -- System & AI-Generated Data
-    status TEXT CHECK (status IN ('to_read', 'currently_reading', 'finished', 'dnf')),
+    status TEXT CHECK (status IN ('to_read', 'currently_reading', 'finished', 'processing', 'enriched', 'failed')) DEFAULT 'to_read',
     queue_position INTEGER,
     availability TEXT,
     hype_flag BOOLEAN DEFAULT false,
@@ -162,13 +161,69 @@ CREATE INDEX idx_conversational_state_session ON conversational_state (session_i
 CREATE INDEX idx_conversational_state_expires ON conversational_state (expires_at);
 ```
 
+## Data Import Sources
+
+### CSV Import (Historical Backfill)
+
+**Source**: `project-specs/goodreads_read_history.csv`
+
+**Filtering**: Only books with status `"read"` are imported (filters out `to-read`, `currently-reading`)
+
+**Field Mappings**:
+
+| CSV Column        | Database Field(s)                       | Processing                                 |
+| ----------------- | --------------------------------------- | ------------------------------------------ |
+| `Book Id`         | `goodreads_id`                          | `parseInt()`                               |
+| `Title`           | `title`, `series_name`, `series_number` | Regex parse: `"Title (Series, #N)"`        |
+| `Author`          | `author`                                | Direct                                     |
+| `ISBN13` / `ISBN` | `isbn`                                  | Prefers ISBN13                             |
+| `My Rating`       | `user_rating`                           | `parseInt()` 1-5                           |
+| `Publisher`       | `publisher`                             | Direct                                     |
+| `Number of Pages` | `page_count`                            | `parseInt()`                               |
+| `Year Published`  | `publication_date`                      | `YYYY-01-01`                               |
+| `Date Read`       | `user_date_finished`                    | MM/DD/YY → ISO                             |
+| `Date Added`      | `user_date_added`                       | MM/DD/YY → ISO                             |
+| `Status`          | _(filter only)_                         | Only `"read"` imported                     |
+| _(constructed)_   | `goodreads_link`                        | `https://www.goodreads.com/book/show/{id}` |
+| _(hardcoded)_     | `status`                                | `"finished"`                               |
+
+**Date Format**: MM/DD/YY with 2-digit year conversion (00-49 → 2000-2049, 50-99 → 1950-1999)
+
+### RSS Feed Import (Ongoing Sync)
+
+**Source**: Goodreads RSS feed (environment variable `GOODREADS_RSS_FEED_URL_READ`)
+
+**Filtering**: None - imports all books from any shelf
+
+**Field Mappings**:
+
+| RSS Field                                 | Database Field(s)                       | Processing                          |
+| ----------------------------------------- | --------------------------------------- | ----------------------------------- |
+| `book_id`                                 | `goodreads_id`                          | `parseInt()`                        |
+| `title`                                   | `title`, `series_name`, `series_number` | Regex parse: `"Title (Series, #N)"` |
+| `author_name`                             | `author`                                | Direct                              |
+| `isbn`                                    | `isbn`                                  | Direct                              |
+| `book_published`                          | `publication_date`                      | `YYYY-01-01`                        |
+| `book.num_pages`                          | `page_count`                            | `parseInt()`                        |
+| `publisher`                               | `publisher`                             | Direct                              |
+| `book_large_image_url` / `book_image_url` | `cover_image_url`                       | Prefers large                       |
+| `link`                                    | `goodreads_link`                        | Direct URL                          |
+| `user_rating`                             | `user_rating`                           | `parseInt()` 1-5 validated          |
+| `user_read_at`                            | `user_date_finished`                    | ISO → ISO                           |
+| `user_date_added`                         | `user_date_added`                       | ISO → ISO                           |
+| _(hardcoded)_                             | `status`                                | `"to_read"`                         |
+
+**Note**: RSS `book_description` is NOT mapped to `ai_summary` - summaries require AI processing via the enrichment pipeline.
+
 ## Data Constraints and Business Rules
 
-1. **Book Uniqueness**: Books are uniquely identified by `goodreads_id` when available
+1. **Book Uniqueness**: Books are uniquely identified by `goodreads_id` when available (UPSERT on conflict)
 2. **Rating Ranges**: User ratings (1-5), AI ratings (0-10)
-3. **Status Transitions**: Only valid status transitions are enforced at application level
-4. **Vector Dimensions**: Embeddings use 768-dimensional vectors (Google Gemini compatible)
-5. **Cascading Deletes**: Book deletion removes associated reflections and events
+3. **Status Values**: Valid statuses are `'to_read'`, `'currently_reading'`, `'finished'`, `'processing'`, `'enriched'`, `'failed'` (default: `'to_read'`)
+4. **Series Parsing**: Both CSV and RSS parse series info from title using pattern `"Book Title (Series Name, #N)"`
+5. **Vector Dimensions**: Embeddings use 768-dimensional vectors (Google Gemini compatible)
+6. **Cascading Deletes**: Book deletion removes associated reflections and events
+7. **Import Idempotency**: Both CSV and RSS imports use UPSERT on `goodreads_id` for safe re-runs
 
 ## Column Details Reference
 
@@ -201,12 +256,13 @@ CREATE INDEX idx_conversational_state_expires ON conversational_state (expires_a
 - `cover_image_url` (TEXT): Link to book cover image
 - `goodreads_link` (TEXT): Canonical Goodreads URL
 
-### User Data (from Goodreads RSS)
+### User Data (from RSS and CSV sources)
 
-- `user_shelves` (TEXT[]): Array of Goodreads shelf names
 - `user_rating` (INTEGER): User's 1-5 star rating, nullable
-- `user_date_added` (TIMESTAMP): When book was added to shelf
+- `user_date_added` (TIMESTAMP): When book was added to shelf/library
 - `user_date_finished` (TIMESTAMP): When user finished reading
+
+**Note**: `user_shelves` field was removed in migration `20251001000000_update_books_schema.sql` as shelf information is implicit from the `status` field.
 
 ### Classification & Thematic Data (AI-Enriched)
 
