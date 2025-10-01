@@ -16,7 +16,8 @@ const env = await load();
 // Test webhook endpoint URL (local Supabase)
 const WEBHOOK_URL = "http://127.0.0.1:54321/functions/v1/telegram-webhook";
 // Supabase anon key for local dev (public, safe to commit)
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
 
 /**
  * Create a mock Telegram update for testing
@@ -55,7 +56,7 @@ Deno.test({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify(mockUpdate),
     }).catch(() => null);
@@ -88,7 +89,7 @@ Deno.test({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "X-Telegram-Bot-Api-Secret-Token": "invalid-secret-token",
       },
       body: JSON.stringify(mockUpdate),
