@@ -25,7 +25,15 @@ EXCEPTION
 END $$;
 
 -- Clean up any lingering cron.job rows with the same name (covers legacy schedules)
-DELETE FROM cron.job WHERE jobname = 'rss-ingestion-daily';
+DO $$
+DECLARE
+  cleanup_job_id integer;
+BEGIN
+  FOR cleanup_job_id IN SELECT jobid FROM cron.job WHERE jobname = 'rss-ingestion-daily'
+  LOOP
+    PERFORM cron.remove_job(cleanup_job_id);
+  END LOOP;
+END $$;
 
 -- Schedule RSS ingestion to run daily at 2 AM UTC
 SELECT cron.schedule(
