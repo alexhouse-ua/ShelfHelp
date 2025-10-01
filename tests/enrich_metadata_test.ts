@@ -15,6 +15,11 @@
 import { assertEquals, assertExists } from "jsr:@std/assert@1";
 
 function shouldRunIntegrationTests(): boolean {
+  // Skip in CI unless explicitly enabled
+  if (Deno.env.get("CI") === "true" && Deno.env.get("TEST_ENRICH_METADATA_LIVE") !== "1") {
+    return false;
+  }
+
   const liveFlag = Deno.env.get("TEST_ENRICH_METADATA_LIVE");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const geminiApiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY");
@@ -123,10 +128,7 @@ Deno.test({
     });
 
     await t.step("Clean up test book", async () => {
-      const { error } = await supabase
-        .from("books")
-        .delete()
-        .eq("id", testBookId);
+      const { error } = await supabase.from("books").delete().eq("id", testBookId);
 
       assertEquals(error, null);
       console.log(`✅ Test book cleaned up`);

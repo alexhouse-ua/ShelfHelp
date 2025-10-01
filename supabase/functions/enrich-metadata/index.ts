@@ -195,13 +195,10 @@ Deno.serve(async (req: Request) => {
     const { book_id } = await req.json();
 
     if (!book_id) {
-      return new Response(
-        JSON.stringify({ success: false, error: "book_id is required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ success: false, error: "book_id is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     log(requestId, "info", "Fetching book data", { book_id });
@@ -215,13 +212,10 @@ Deno.serve(async (req: Request) => {
 
     if (fetchError || !book) {
       log(requestId, "error", "Book not found", { book_id, error: fetchError });
-      return new Response(
-        JSON.stringify({ success: false, error: "Book not found" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return new Response(JSON.stringify({ success: false, error: "Book not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     log(requestId, "info", "Enriching book metadata", {

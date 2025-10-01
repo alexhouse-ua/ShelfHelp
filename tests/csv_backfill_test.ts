@@ -13,6 +13,11 @@
 import { assertEquals, assertExists } from "jsr:@std/assert@1";
 
 function shouldRunIntegrationTests(): boolean {
+  // Skip in CI unless explicitly enabled
+  if (Deno.env.get("CI") === "true" && Deno.env.get("TEST_CSV_BACKFILL_LIVE") !== "1") {
+    return false;
+  }
+
   const liveFlag = Deno.env.get("TEST_CSV_BACKFILL_LIVE");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const isLocalSupabase = supabaseUrl?.includes("127.0.0.1:54321");
@@ -148,10 +153,7 @@ Deno.test({
       assertEquals(error, null);
       assertExists(data);
       assertExists(data.goodreads_link);
-      assertEquals(
-        data.goodreads_link,
-        `https://www.goodreads.com/book/show/${data.goodreads_id}`,
-      );
+      assertEquals(data.goodreads_link, `https://www.goodreads.com/book/show/${data.goodreads_id}`);
     });
 
     await t.step("Verify idempotency: duplicate goodreads_id handled via UPSERT", async () => {

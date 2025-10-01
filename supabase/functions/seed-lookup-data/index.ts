@@ -115,10 +115,7 @@ async function seedGenresAndSubgenres(
     for (const subgenreName of subgenreNames) {
       const { error: subgenreError } = await supabase
         .from("subgenres")
-        .upsert(
-          { genre_id: genreId, name: subgenreName },
-          { onConflict: "genre_id,name" },
-        );
+        .upsert({ genre_id: genreId, name: subgenreName }, { onConflict: "genre_id,name" });
 
       if (subgenreError) {
         log(requestId, "error", `Failed to upsert subgenre: ${subgenreName}`, {
@@ -194,10 +191,7 @@ async function seedTropes(
     for (const tropeName of tropeEntry.Tropes) {
       const { error } = await supabase
         .from("tropes")
-        .upsert(
-          { genre_id: genreId, name: tropeName },
-          { onConflict: "genre_id,name" },
-        );
+        .upsert({ genre_id: genreId, name: tropeName }, { onConflict: "genre_id,name" });
 
       if (error) {
         log(requestId, "error", `Failed to upsert trope: ${tropeName}`, { error });
@@ -234,18 +228,16 @@ async function seedRecommendationSources(
 
   // Insert recommendation sources
   for (const source of allSources) {
-    const { error } = await supabase
-      .from("recommendation_sources")
-      .upsert(
-        {
-          name: source.name,
-          url: source.url,
-          scope: source.scope,
-          categories: source.categories,
-          priority: source.priority,
-        },
-        { onConflict: "name" },
-      );
+    const { error } = await supabase.from("recommendation_sources").upsert(
+      {
+        name: source.name,
+        url: source.url,
+        scope: source.scope,
+        categories: source.categories,
+        priority: source.priority,
+      },
+      { onConflict: "name" },
+    );
 
     if (error) {
       log(requestId, "error", `Failed to upsert recommendation source: ${source.name}`, { error });
@@ -289,7 +281,8 @@ Deno.serve(async (_req: Request) => {
 
     // Validate YAML structure
     if (
-      !classificationsData.Genres || !classificationsData.Spice_Levels ||
+      !classificationsData.Genres ||
+      !classificationsData.Spice_Levels ||
       !classificationsData.Tropes
     ) {
       throw new Error("Invalid classifications.yaml structure");
@@ -315,11 +308,7 @@ Deno.serve(async (_req: Request) => {
     );
 
     log(requestId, "info", "Seeding tropes");
-    const tropesInserted = await seedTropes(
-      supabase,
-      classificationsData.Tropes,
-      requestId,
-    );
+    const tropesInserted = await seedTropes(supabase, classificationsData.Tropes, requestId);
 
     log(requestId, "info", "Seeding recommendation sources");
     const recommendationSourcesInserted = await seedRecommendationSources(

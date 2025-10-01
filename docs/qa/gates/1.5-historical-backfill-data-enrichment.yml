@@ -63,10 +63,8 @@ recommendations:
     - action: "Add batch processing for metadata enrichment to handle bulk operations efficiently"
       refs: ["supabase/functions/enrich-metadata/index.ts"]
     - action: "Consider adding progress tracking for long-running CSV/enrichment operations"
-      refs: [
-        "supabase/functions/csv-backfill/index.ts",
-        "supabase/functions/enrich-metadata/index.ts",
-      ]
+      refs:
+        ["supabase/functions/csv-backfill/index.ts", "supabase/functions/enrich-metadata/index.ts"]
 
 # Technical assessment
 technical_assessment:

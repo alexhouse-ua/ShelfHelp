@@ -39,20 +39,20 @@ function log(
  */
 interface GoodreadsCSVRow {
   "Book Id": string;
-  "Title": string;
-  "Author": string;
-  "ISBN": string;
-  "ISBN13": string;
+  Title: string;
+  Author: string;
+  ISBN: string;
+  ISBN13: string;
   "My Rating": string;
   "Average Rating": string;
-  "Publisher": string;
-  "Binding": string;
+  Publisher: string;
+  Binding: string;
   "Number of Pages": string;
   "Year Published": string;
   "Original Publication Year": string;
   "Date Read": string;
   "Date Added": string;
-  "Status": string;
+  Status: string;
 }
 
 /**
@@ -262,9 +262,7 @@ Deno.serve(async (_req: Request) => {
           }
         } else {
           // Insert new book
-          const { error: insertError } = await supabase
-            .from("books")
-            .insert(bookData);
+          const { error: insertError } = await supabase.from("books").insert(bookData);
 
           if (insertError) {
             log(requestId, "error", "Failed to insert book", {

@@ -13,6 +13,11 @@
 import { assertEquals, assertExists } from "jsr:@std/assert@1";
 
 function shouldRunIntegrationTests(): boolean {
+  // Skip in CI unless explicitly enabled
+  if (Deno.env.get("CI") === "true" && Deno.env.get("TEST_SEED_LOOKUP_DATA_LIVE") !== "1") {
+    return false;
+  }
+
   const liveFlag = Deno.env.get("TEST_SEED_LOOKUP_DATA_LIVE");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const isLocalSupabase = supabaseUrl?.includes("127.0.0.1:54321");
@@ -59,10 +64,7 @@ Deno.test({
       const { createClient } = await import("jsr:@supabase/supabase-js@2");
       const supabase = createClient(supabaseUrl!, supabaseKey!);
 
-      const { data, error } = await supabase
-        .from("genres")
-        .select("id, name")
-        .limit(5);
+      const { data, error } = await supabase.from("genres").select("id, name").limit(5);
 
       assertEquals(error, null);
       assertExists(data);
@@ -102,10 +104,7 @@ Deno.test({
       const { createClient } = await import("jsr:@supabase/supabase-js@2");
       const supabase = createClient(supabaseUrl!, supabaseKey!);
 
-      const { data, error } = await supabase
-        .from("tropes")
-        .select("id, name, genre_id")
-        .limit(5);
+      const { data, error } = await supabase.from("tropes").select("id, name, genre_id").limit(5);
 
       assertEquals(error, null);
       assertExists(data);
