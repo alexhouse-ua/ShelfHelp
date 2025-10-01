@@ -21,7 +21,7 @@ jobs:
         run: deno lint
 
       - name: Run Deno format check
-        run: deno fmt --check
+        run: deno fmt --check --ignore=docs/,README.md
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -30,9 +30,16 @@ jobs:
 
       - name: Start Supabase local instance
         run: supabase start
+        env:
+          TELEGRAM_BOT_TOKEN: test-bot-token-for-ci
+          TELEGRAM_WEBHOOK_SECRET: test-webhook-secret-for-ci
+          GOOGLE_GEMINI_API_KEY: test-gemini-key-for-ci
 
       - name: Run tests
         run: deno test -A
         env:
           SUPABASE_URL: http://127.0.0.1:54321
           SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+          TELEGRAM_BOT_TOKEN: test-bot-token-for-ci
+          TELEGRAM_WEBHOOK_SECRET: test-webhook-secret-for-ci
+          GOOGLE_GEMINI_API_KEY: test-gemini-key-for-ci

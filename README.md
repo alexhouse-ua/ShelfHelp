@@ -47,13 +47,43 @@ ShelfHelp helps readers discover their next great read through conversational AI
    This will start all Supabase services (PostgreSQL, PostgREST, Auth, Storage, etc.) in Docker containers.
 
 4. **Configure environment variables**
-   Create a `.env` file with:
-   ```env
-   TELEGRAM_BOT_TOKEN=<your-bot-token>
-   TELEGRAM_WEBHOOK_SECRET=<your-webhook-secret>
-   GOOGLE_GEMINI_API_KEY=<your-gemini-key>
-   SUPABASE_URL=http://127.0.0.1:54321
-   SUPABASE_SERVICE_ROLE_KEY=<from-supabase-start-output>
+
+   **Local Development:**
+   ```bash
+   # Copy the example file
+   cp supabase/.env.local.example supabase/.env.local
+
+   # Edit supabase/.env.local with your actual credentials
+   ```
+
+   Required variables:
+   - `TELEGRAM_BOT_TOKEN` - Get from [@BotFather](https://t.me/botfather)
+   - `TELEGRAM_WEBHOOK_SECRET` - Generate with `openssl rand -hex 32`
+   - `GOOGLE_GEMINI_API_KEY` - Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - `GOODREADS_RSS_FEED_URL_READ` - See below
+   - `SUPABASE_URL` - Use `http://127.0.0.1:54321` for local
+   - `SUPABASE_SERVICE_ROLE_KEY` - From `supabase start` output
+   - `SUPABASE_ANON_KEY` - From `supabase start` output
+
+   **Getting your Goodreads RSS URL:**
+   1. Log in to Goodreads
+   2. Go to My Books → Read shelf
+   3. Scroll to bottom → RSS feed link
+   4. Copy the full URL (includes your user ID and private key)
+
+   **Production Deployment:**
+
+   Set secrets via Supabase CLI (never commit these):
+   ```bash
+   supabase secrets set TELEGRAM_BOT_TOKEN="<your-token>"
+   supabase secrets set GOOGLE_GEMINI_API_KEY="<your-key>"
+   supabase secrets set GOODREADS_RSS_FEED_URL_READ="<your-url>"
+   ```
+
+   Set Vault secrets for pg_cron authentication (run via Supabase SQL Editor):
+   ```sql
+   SELECT vault.create_secret('https://your-project-ref.supabase.co', 'project_url');
+   SELECT vault.create_secret('your-anon-key', 'anon_key');
    ```
 
 5. **Run the bot locally**
@@ -78,14 +108,47 @@ deno test -A --watch
 
 ### Test Structure
 
-- `tests/book_addition_test.ts` - Integration tests for conversational book addition (11 tests)
-- `tests/webhook_test.ts` - Webhook authentication and database tests (3 tests)
+**Unit Tests (Fast, No External Dependencies):**
+
+- `tests/rss_ingestion.unit.test.ts` - RSS ingestion logic with mocked dependencies (9 tests)
+  - Always runs in CI
+  - No production credentials required
+  - Covers parsing, error handling, field mapping
+
+**Integration Tests (Require Running Services):**
+
+- `tests/book_addition_test.ts` - Conversational book addition end-to-end (11 tests)
+- `tests/webhook_test.ts` - Webhook authentication and database (3 tests)
+- `tests/rss_ingestion.integration.test.ts` - RSS ingestion against live Supabase (optional, 2 tests)
+  - Skipped by default in CI
+  - Run manually with local Supabase or `TEST_RSS_INGESTION_LIVE=1`
 
 ### Test Requirements
 
+**Unit Tests:**
+
+- No external services required
+- Run with: `deno test -A tests/*.unit.test.ts`
+
+**Integration Tests:**
+
 - Local Supabase must be running (`supabase start`)
 - Tests use service role key for database access
-- Integration tests validate end-to-end workflows
+- Run with: `deno test -A tests/*.test.ts`
+
+**Running RSS Integration Tests (Optional):**
+
+```bash
+# 1. Start local Supabase
+supabase start
+
+# 2. Configure environment (see .env.local.example)
+cp supabase/.env.local.example supabase/.env.local
+# Edit supabase/.env.local with local credentials
+
+# 3. Run integration tests
+deno test -A tests/rss_ingestion.integration.test.ts
+```
 
 ## Code Quality
 
@@ -166,11 +229,49 @@ ShelfHelp/
 ├── supabase/
 │   ├── functions/        # Edge Functions
 │   │   ├── telegram-webhook/  # Main bot handler
+│   │   ├── rss-ingestion/     # Goodreads RSS feed ingestion
 │   │   └── _shared/      # Shared utilities
 │   └── migrations/       # Database migrations
 ├── tests/                # Integration tests
 └── docs/                 # Project documentation
 ```
+
+## Features
+
+### Automated RSS Ingestion
+
+ShelfHelp automatically syncs your Goodreads "read" shelf via RSS feeds.
+
+**How it works:**
+
+- A `pg_cron` job runs daily at 2 AM UTC
+- Fetches your Goodreads RSS feed
+- Parses book metadata (title, author, rating, dates, etc.)
+- Upserts books to database (new books inserted, existing books updated)
+- No duplicates - matched by `goodreads_id`
+
+**Manual Trigger (Testing):**
+
+```bash
+# Using curl
+curl -X POST http://127.0.0.1:54321/functions/v1/rss-ingestion \
+  -H "Authorization: Bearer <your-anon-key>" \
+  -H "Content-Type: application/json"
+
+# Or via Supabase CLI
+supabase functions invoke rss-ingestion --env-file supabase/.env.local
+```
+
+**Monitoring:**
+
+- Check Edge Function logs: `supabase functions logs rss-ingestion`
+- Query ingestion results: `SELECT * FROM books WHERE goodreads_id IS NOT NULL ORDER BY created_at DESC LIMIT 10;`
+
+**Troubleshooting:**
+
+- **RSS feed not configured**: Set `GOODREADS_RSS_FEED_URL_READ` in `.env` (local) or Supabase secrets (production)
+- **Cron job not running**: Verify pg_cron extension enabled and job scheduled: `SELECT jobname, schedule FROM cron.job;`
+- **Books not appearing**: Check Edge Function logs for parsing errors or XML format changes
 
 ## Development Workflow
 
