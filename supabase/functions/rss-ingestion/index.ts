@@ -89,7 +89,10 @@ function parseRSSDate(dateStr?: string): string | null {
  */
 function parseUserShelves(shelvesStr?: string): string[] | null {
   if (!shelvesStr) return null;
-  return shelvesStr.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+  return shelvesStr
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
 /**
@@ -244,10 +247,10 @@ export async function handleRSSIngestion(
     const rssFeedUrl = Deno.env.get("GOODREADS_RSS_FEED_URL_READ");
     if (!rssFeedUrl) {
       log(requestId, "error", "Missing GOODREADS_RSS_FEED_URL_READ environment variable");
-      return new Response(
-        JSON.stringify({ error: "RSS feed URL not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "RSS feed URL not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Initialize Supabase client
@@ -256,10 +259,10 @@ export async function handleRSSIngestion(
 
     if (!supabaseUrl || !supabaseServiceKey) {
       log(requestId, "error", "Missing Supabase credentials");
-      return new Response(
-        JSON.stringify({ error: "Supabase credentials not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: "Supabase credentials not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     const supabase = deps.createSupabaseClient(supabaseUrl, supabaseServiceKey);
@@ -294,10 +297,10 @@ export async function handleRSSIngestion(
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown parsing error";
       log(requestId, "error", "XML parsing failed", { error: errorMessage });
-      return new Response(
-        JSON.stringify({ error: `XML parsing failed: ${errorMessage}` }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ error: `XML parsing failed: ${errorMessage}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
     // Extract items from RSS feed (normalize single item to array)
@@ -367,10 +370,10 @@ export async function handleRSSIngestion(
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     log(requestId, "error", "RSS ingestion failed", { error: errorMessage });
 
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 

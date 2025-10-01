@@ -1,6 +1,6 @@
 ### Searching and Reading Files
 
-Always use ast-grep when searching codebase.
+Always use ast-grep when searching codebase. Do NOT use grep, rg, or other text-based search tools unless ast-grep did not work.
 
 ### Token Efficiency
 

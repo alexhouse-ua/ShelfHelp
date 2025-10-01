@@ -59,6 +59,7 @@ temp/
 
 # Agent files
 .github.env
+.kilocode/
 
 # Local trash (not tracked)
 .workspace-trash/

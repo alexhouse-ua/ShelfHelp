@@ -58,7 +58,7 @@ Deno.test({
     }).catch(() => null);
 
     // Skip if Edge Functions not running
-    if (!response || response.status === 404 || response.status === 500) {
+    if (!response || response.status === 404 || response.status === 500 || response.status === 503) {
       console.log("⚠️  Skipping: Edge Functions not running (expected in CI or when not served)");
       return;
     }
@@ -86,7 +86,7 @@ Deno.test({
     }).catch(() => null);
 
     // Skip if Edge Functions not running
-    if (!response || response.status === 404 || response.status === 500) {
+    if (!response || response.status === 404 || response.status === 500 || response.status === 503) {
       console.log("⚠️  Skipping: Edge Functions not running (expected in CI or when not served)");
       return;
     }

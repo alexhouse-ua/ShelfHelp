@@ -52,7 +52,7 @@ if (!shouldRunLegacySuite) {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/rss-ingestion`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ trigger: "test" }),
@@ -132,7 +132,7 @@ if (!shouldRunLegacySuite) {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/rss-ingestion`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           "Content-Type": "application/json",
         },
       }).catch(() => null);
@@ -192,11 +192,14 @@ if (!shouldRunLegacySuite) {
       // Test the normalization logic for single-item feeds
       // This is a unit test that validates the array coercion logic
       const singleItem = { book_id: "123", title: "Test Book", author_name: "Test Author" };
-      const multipleItems = [singleItem, {
-        book_id: "456",
-        title: "Another Book",
-        author_name: "Another Author",
-      }];
+      const multipleItems = [
+        singleItem,
+        {
+          book_id: "456",
+          title: "Another Book",
+          author_name: "Another Author",
+        },
+      ];
 
       // Simulate the normalization logic from the handler
       const normalizedSingle = Array.isArray(singleItem) ? singleItem : [singleItem];
@@ -225,7 +228,7 @@ if (!shouldRunLegacySuite) {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/rss-ingestion`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ trigger: "test" }),
