@@ -1,8 +1,8 @@
 /**
  * Unit tests for centralized logger utility
  */
-import { assertEquals, assertMatch } from "jsr:@std/assert";
-import { assertSpyCalls, spy } from "jsr:@std/testing/mock";
+import { assertEquals, assertMatch } from "jsr:@std/assert@1";
+import { assertSpyCalls, spy } from "jsr:@std/testing@*/mock";
 import { createLogger, generateRequestId } from "../supabase/functions/_shared/logger.ts";
 
 Deno.test("Logger - generateRequestId returns valid UUID format", () => {
