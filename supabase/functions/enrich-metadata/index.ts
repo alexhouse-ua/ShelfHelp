@@ -1,37 +1,8 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-/**
- * Generate a unique request ID for traceability
- */
-function generateRequestId(): string {
-  return crypto.randomUUID();
-}
-
-/**
- * Structured logging helper
- */
-function log(
-  requestId: string,
-  level: "info" | "error",
-  message: string,
-  context?: Record<string, unknown>,
-): void {
-  const logEntry = {
-    requestId,
-    level,
-    message,
-    timestamp: new Date().toISOString(),
-    context: context || {},
-  };
-
-  if (level === "error") {
-    console.error(JSON.stringify(logEntry));
-  } else {
-    console.log(JSON.stringify(logEntry));
-  }
-}
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
+import { badRequest, internalError, notFound } from "../_shared/error-handler.ts";
 
 /**
  * Book enrichment data structure
@@ -55,7 +26,7 @@ interface BookEnrichmentData {
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
-  requestId: string,
+  logger: ReturnType<typeof createLogger>,
 ): Promise<T> {
   let lastError: Error | null = null;
 
@@ -64,11 +35,11 @@ async function retryWithBackoff<T>(
       return await fn();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      log(requestId, "error", `Attempt ${attempt} failed`, { error: lastError.message });
+      logger.error(`Attempt ${attempt} failed`, { error: lastError.message });
 
       if (attempt < maxRetries) {
         const backoffMs = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-        log(requestId, "info", `Retrying in ${backoffMs}ms`);
+        logger.info(`Retrying in ${backoffMs}ms`);
         await new Promise((resolve) => setTimeout(resolve, backoffMs));
       }
     }
@@ -84,7 +55,7 @@ async function enrichBookMetadata(
   title: string,
   author: string,
   geminiApiKey: string,
-  requestId: string,
+  logger: ReturnType<typeof createLogger>,
 ): Promise<BookEnrichmentData> {
   const GEMINI_MODEL = "gemini-1.5-pro";
   const GEMINI_API_URL =
@@ -169,7 +140,7 @@ Return ONLY valid JSON with no additional text or markdown.`;
   };
 
   // Retry with exponential backoff
-  return await retryWithBackoff(fetchEnrichment, 3, requestId);
+  return await retryWithBackoff(fetchEnrichment, 3, logger);
 }
 
 /**
@@ -177,7 +148,8 @@ Return ONLY valid JSON with no additional text or markdown.`;
  */
 Deno.serve(async (req: Request) => {
   const requestId = generateRequestId();
-  log(requestId, "info", "Enrich metadata function invoked");
+  const logger = createLogger(requestId);
+  logger.info("Enrich metadata function invoked");
 
   try {
     // Initialize Supabase client
@@ -195,13 +167,10 @@ Deno.serve(async (req: Request) => {
     const { book_id } = await req.json();
 
     if (!book_id) {
-      return new Response(JSON.stringify({ success: false, error: "book_id is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return badRequest("book_id is required", requestId);
     }
 
-    log(requestId, "info", "Fetching book data", { book_id });
+    logger.info("Fetching book data", { book_id });
 
     // Fetch book data
     const { data: book, error: fetchError } = await supabase
@@ -211,14 +180,11 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (fetchError || !book) {
-      log(requestId, "error", "Book not found", { book_id, error: fetchError });
-      return new Response(JSON.stringify({ success: false, error: "Book not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      logger.error("Book not found", { book_id, error: fetchError });
+      return notFound("Book not found", requestId);
     }
 
-    log(requestId, "info", "Enriching book metadata", {
+    logger.info("Enriching book metadata", {
       book_id,
       title: book.title,
       author: book.author,
@@ -229,10 +195,10 @@ Deno.serve(async (req: Request) => {
       book.title,
       book.author,
       geminiApiKey,
-      requestId,
+      logger,
     );
 
-    log(requestId, "info", "Updating book with enrichment data", { book_id });
+    logger.info("Updating book with enrichment data", { book_id });
 
     // Update book with enrichment data
     const { error: updateError } = await supabase
@@ -253,11 +219,11 @@ Deno.serve(async (req: Request) => {
       .eq("id", book_id);
 
     if (updateError) {
-      log(requestId, "error", "Failed to update book", { book_id, error: updateError });
+      logger.error("Failed to update book", { book_id, error: updateError });
       throw new Error(`Failed to update book: ${updateError.message}`);
     }
 
-    log(requestId, "info", "Book enrichment completed successfully", { book_id });
+    logger.info("Book enrichment completed successfully", { book_id });
 
     return new Response(
       JSON.stringify({
@@ -271,17 +237,10 @@ Deno.serve(async (req: Request) => {
       },
     );
   } catch (error) {
-    log(requestId, "error", "Enrich metadata failed", { error: String(error) });
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
+    logger.error("Enrich metadata failed", { error: String(error) });
+    return internalError(
+      error instanceof Error ? error.message : String(error),
+      requestId,
     );
   }
 });

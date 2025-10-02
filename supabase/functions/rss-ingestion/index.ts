@@ -2,6 +2,8 @@
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { XMLParser } from "npm:fast-xml-parser@4";
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
+import { badRequest, internalError } from "../_shared/error-handler.ts";
 
 /**
  * Default RSS feed fetcher (thin wrapper around fetch for testability)
@@ -15,37 +17,6 @@ export async function fetchRssFeed(url: string): Promise<Response> {
  */
 export function createSupabaseClient(url: string, key: string): SupabaseClient {
   return createClient(url, key);
-}
-
-/**
- * Generate a unique request ID for traceability
- */
-function generateRequestId(): string {
-  return crypto.randomUUID();
-}
-
-/**
- * Structured logging helper
- */
-function log(
-  requestId: string,
-  level: "info" | "error",
-  message: string,
-  context?: Record<string, unknown>,
-): void {
-  const logEntry = {
-    requestId,
-    level,
-    message,
-    timestamp: new Date().toISOString(),
-    context: context || {},
-  };
-
-  if (level === "error") {
-    console.error(JSON.stringify(logEntry));
-  } else {
-    console.log(JSON.stringify(logEntry));
-  }
 }
 
 /**
@@ -174,7 +145,7 @@ async function upsertBook(
   // deno-lint-ignore no-explicit-any
   supabase: any,
   book: ReturnType<typeof mapRSSItemToBook>,
-  requestId: string,
+  logger: ReturnType<typeof createLogger>,
 ): Promise<{ success: boolean; action: "inserted" | "updated" | "skipped"; error?: string }> {
   if (!book.goodreads_id || !book.title || !book.author) {
     return {
@@ -194,7 +165,7 @@ async function upsertBook(
       .maybeSingle();
 
     if (existingError && existingError.code !== "PGRST116") {
-      log(requestId, "error", "Database lookup error", {
+      logger.error("Database lookup error", {
         error: existingError.message,
         goodreadsId: book.goodreads_id,
       });
@@ -205,7 +176,7 @@ async function upsertBook(
     }
   } catch (lookupError) {
     const errorMessage = lookupError instanceof Error ? lookupError.message : "Unknown error";
-    log(requestId, "error", "Database lookup exception", {
+    logger.error("Database lookup exception", {
       error: errorMessage,
       goodreadsId: book.goodreads_id,
     });
@@ -221,7 +192,7 @@ async function upsertBook(
       .select();
 
     if (error) {
-      log(requestId, "error", "Database upsert error", { error: error.message, book });
+      logger.error("Database upsert error", { error: error.message, book });
       return { success: false, action: "skipped", error: error.message };
     }
 
@@ -229,7 +200,7 @@ async function upsertBook(
 
     // Fallback guard: if we expected an insert but Supabase returned no rows, log it for observability
     if (!existingBeforeUpsert && (!data || data.length === 0)) {
-      log(requestId, "error", "Upsert returned no rows for expected insert", {
+      logger.error("Upsert returned no rows for expected insert", {
         goodreadsId: book.goodreads_id,
       });
     }
@@ -237,7 +208,7 @@ async function upsertBook(
     return { success: true, action };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    log(requestId, "error", "Database upsert exception", { error: errorMessage, book });
+    logger.error("Database upsert exception", { error: errorMessage, book });
     return { success: false, action: "skipped", error: errorMessage };
   }
 }
@@ -249,17 +220,15 @@ export async function handleRSSIngestion(
   deps: HandlerDeps = { fetchRssFeed, createSupabaseClient },
 ): Promise<Response> {
   const requestId = generateRequestId();
-  log(requestId, "info", "RSS ingestion started");
+  const logger = createLogger(requestId);
+  logger.info("RSS ingestion started");
 
   try {
     // Get RSS feed URL from environment
     const rssFeedUrl = Deno.env.get("GOODREADS_RSS_FEED_URL_READ");
     if (!rssFeedUrl) {
-      log(requestId, "error", "Missing GOODREADS_RSS_FEED_URL_READ environment variable");
-      return new Response(JSON.stringify({ error: "RSS feed URL not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      logger.error("Missing GOODREADS_RSS_FEED_URL_READ environment variable");
+      return internalError("RSS feed URL not configured", requestId);
     }
 
     // Initialize Supabase client
@@ -267,21 +236,18 @@ export async function handleRSSIngestion(
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      log(requestId, "error", "Missing Supabase credentials");
-      return new Response(JSON.stringify({ error: "Supabase credentials not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      logger.error("Missing Supabase credentials");
+      return internalError("Supabase credentials not configured", requestId);
     }
 
     const supabase = deps.createSupabaseClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch RSS feed
-    log(requestId, "info", "Fetching RSS feed");
+    logger.info("Fetching RSS feed");
     const response = await deps.fetchRssFeed(rssFeedUrl);
 
     if (!response.ok) {
-      log(requestId, "error", "Failed to fetch RSS feed", {
+      logger.error("Failed to fetch RSS feed", {
         status: response.status,
         statusText: response.statusText,
       });
@@ -292,7 +258,7 @@ export async function handleRSSIngestion(
     }
 
     const xmlText = await response.text();
-    log(requestId, "info", "RSS feed fetched successfully", { size: xmlText.length });
+    logger.info("RSS feed fetched successfully", { size: xmlText.length });
 
     // Parse XML
     const parser = new XMLParser({
@@ -305,20 +271,17 @@ export async function handleRSSIngestion(
       parsedData = parser.parse(xmlText);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown parsing error";
-      log(requestId, "error", "XML parsing failed", { error: errorMessage });
-      return new Response(JSON.stringify({ error: `XML parsing failed: ${errorMessage}` }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      logger.error("XML parsing failed", { error: errorMessage });
+      return badRequest(`XML parsing failed: ${errorMessage}`, requestId);
     }
 
     // Extract items from RSS feed (normalize single item to array)
     const rawItems = parsedData?.rss?.channel?.item;
     const items: RSSItem[] = rawItems ? (Array.isArray(rawItems) ? rawItems : [rawItems]) : [];
-    log(requestId, "info", `Parsed ${items.length} items from RSS feed`);
+    logger.info(`Parsed ${items.length} items from RSS feed`);
 
     if (items.length === 0) {
-      log(requestId, "info", "No items found in RSS feed");
+      logger.info("No items found in RSS feed");
       return new Response(
         JSON.stringify({
           success: true,
@@ -340,15 +303,15 @@ export async function handleRSSIngestion(
 
     for (const item of items) {
       const book = mapRSSItemToBook(item);
-      const result = await upsertBook(supabase, book, requestId);
+      const result = await upsertBook(supabase, book, logger);
 
       if (result.success) {
         if (result.action === "inserted") {
           results.booksAdded++;
-          log(requestId, "info", "Book inserted", { title: book.title });
+          logger.info("Book inserted", { title: book.title });
         } else if (result.action === "updated") {
           results.booksUpdated++;
-          log(requestId, "info", "Book updated", { title: book.title });
+          logger.info("Book updated", { title: book.title });
         }
       } else {
         results.errors++;
@@ -359,7 +322,7 @@ export async function handleRSSIngestion(
       }
     }
 
-    log(requestId, "info", "RSS ingestion completed", {
+    logger.info("RSS ingestion completed", {
       booksAdded: results.booksAdded,
       booksUpdated: results.booksUpdated,
       errors: results.errors,
@@ -377,12 +340,8 @@ export async function handleRSSIngestion(
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    log(requestId, "error", "RSS ingestion failed", { error: errorMessage });
-
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    logger.error("RSS ingestion failed", { error: errorMessage });
+    return internalError(errorMessage, requestId);
   }
 }
 
