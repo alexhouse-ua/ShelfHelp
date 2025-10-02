@@ -309,9 +309,6 @@ Deno.serve(async (_req: Request) => {
   } catch (error) {
     logger.error("Seed lookup data failed", { error: String(error) });
 
-    return internalError(
-      error instanceof Error ? error.message : String(error),
-      requestId,
-    );
+    return internalError(error instanceof Error ? error.message : String(error), requestId);
   }
 });

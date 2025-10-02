@@ -11,24 +11,24 @@ import {
   unauthorized,
 } from "../supabase/functions/_shared/error-handler.ts";
 
-Deno.test("Error Handler - createErrorResponse returns Response with correct status code", async () => {
-  const response = createErrorResponse("Test error", "req-123", 418);
+Deno.test(
+  "Error Handler - createErrorResponse returns Response with correct status code",
+  async () => {
+    const response = createErrorResponse("Test error", "req-123", 418);
 
-  assertEquals(response.status, 418);
-  assertEquals(response.headers.get("Content-Type"), "application/json");
+    assertEquals(response.status, 418);
+    assertEquals(response.headers.get("Content-Type"), "application/json");
 
-  const body = await response.json();
-  assertEquals(body.error, "Test error");
-  assertEquals(body.requestId, "req-123");
-});
+    const body = await response.json();
+    assertEquals(body.error, "Test error");
+    assertEquals(body.requestId, "req-123");
+  },
+);
 
 Deno.test("Error Handler - error response body has correct JSON structure", async () => {
-  const response = createErrorResponse(
-    "Test error message",
-    "req-456",
-    500,
-    { additionalInfo: "Extra details" },
-  );
+  const response = createErrorResponse("Test error message", "req-456", 500, {
+    additionalInfo: "Extra details",
+  });
 
   const body = await response.json();
 

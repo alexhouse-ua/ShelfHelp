@@ -48,11 +48,7 @@ export function createErrorResponse(
  * @param details - Optional additional error details
  * @returns Response with 400 status
  */
-export function badRequest(
-  message: string,
-  requestId: string,
-  details?: unknown,
-): Response {
+export function badRequest(message: string, requestId: string, details?: unknown): Response {
   return createErrorResponse(message, requestId, 400, details);
 }
 
@@ -63,11 +59,7 @@ export function badRequest(
  * @param details - Optional additional error details
  * @returns Response with 401 status
  */
-export function unauthorized(
-  message: string,
-  requestId: string,
-  details?: unknown,
-): Response {
+export function unauthorized(message: string, requestId: string, details?: unknown): Response {
   return createErrorResponse(message, requestId, 401, details);
 }
 
@@ -78,11 +70,7 @@ export function unauthorized(
  * @param details - Optional additional error details
  * @returns Response with 403 status
  */
-export function forbidden(
-  message: string,
-  requestId: string,
-  details?: unknown,
-): Response {
+export function forbidden(message: string, requestId: string, details?: unknown): Response {
   return createErrorResponse(message, requestId, 403, details);
 }
 
@@ -93,11 +81,7 @@ export function forbidden(
  * @param details - Optional additional error details
  * @returns Response with 404 status
  */
-export function notFound(
-  message: string,
-  requestId: string,
-  details?: unknown,
-): Response {
+export function notFound(message: string, requestId: string, details?: unknown): Response {
   return createErrorResponse(message, requestId, 404, details);
 }
 
@@ -108,10 +92,6 @@ export function notFound(
  * @param details - Optional additional error details
  * @returns Response with 500 status
  */
-export function internalError(
-  message: string,
-  requestId: string,
-  details?: unknown,
-): Response {
+export function internalError(message: string, requestId: string, details?: unknown): Response {
   return createErrorResponse(message, requestId, 500, details);
 }

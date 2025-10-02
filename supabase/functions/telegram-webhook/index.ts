@@ -71,9 +71,7 @@ bot.command("start", async (ctx) => {
       chatId: ctx.chat?.id,
     });
 
-    await ctx.reply(
-      "Welcome to Shelf Help! 📚\n\nI'm your reading companion assistant.",
-    );
+    await ctx.reply("Welcome to Shelf Help! 📚\n\nI'm your reading companion assistant.");
 
     logger.info("/start command completed successfully", {
       operation: "start_command",
@@ -150,10 +148,7 @@ bot.command("dbtest", async (ctx) => {
     });
 
     // Clean up test record
-    const { error: deleteError } = await supabase.from("books").delete().eq(
-      "id",
-      insertData.id,
-    );
+    const { error: deleteError } = await supabase.from("books").delete().eq("id", insertData.id);
 
     if (deleteError) {
       logger.error("Database cleanup failed", {
@@ -312,10 +307,7 @@ async function processBookAddition(
   // Search for book across multiple sources
   const searchResult = await searchBook(title, author);
 
-  if (
-    !searchResult.success || !searchResult.books ||
-    searchResult.books.length === 0
-  ) {
+  if (!searchResult.success || !searchResult.books || searchResult.books.length === 0) {
     logger.info("Book not found", {
       chatId,
       title,
@@ -410,12 +402,7 @@ async function handleBookSelection(
   await cleanupState(supabase, chatId);
 
   // Save book to database
-  await saveBookToDatabase(
-    ctx,
-    chatId,
-    selectedBook as BookMetadata,
-    requestId,
-  );
+  await saveBookToDatabase(ctx, chatId, selectedBook as BookMetadata, requestId);
 }
 
 /**

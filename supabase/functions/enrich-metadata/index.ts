@@ -191,12 +191,7 @@ Deno.serve(async (req: Request) => {
     });
 
     // Enrich metadata
-    const enrichmentData = await enrichBookMetadata(
-      book.title,
-      book.author,
-      geminiApiKey,
-      logger,
-    );
+    const enrichmentData = await enrichBookMetadata(book.title, book.author, geminiApiKey, logger);
 
     logger.info("Updating book with enrichment data", { book_id });
 
@@ -238,9 +233,6 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     logger.error("Enrich metadata failed", { error: String(error) });
-    return internalError(
-      error instanceof Error ? error.message : String(error),
-      requestId,
-    );
+    return internalError(error instanceof Error ? error.message : String(error), requestId);
   }
 });

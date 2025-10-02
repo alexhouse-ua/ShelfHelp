@@ -275,9 +275,6 @@ Deno.serve(async (_req: Request) => {
   } catch (error) {
     logger.error("CSV backfill failed", { error: String(error) });
 
-    return internalError(
-      error instanceof Error ? error.message : String(error),
-      requestId,
-    );
+    return internalError(error instanceof Error ? error.message : String(error), requestId);
   }
 });
