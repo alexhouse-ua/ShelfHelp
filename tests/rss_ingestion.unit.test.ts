@@ -337,7 +337,8 @@ Deno.test("RSS Ingestion Unit Tests", async (t) => {
     assertEquals(mapped.series_number, 2);
     assertEquals(mapped.author, "Test Author");
     assertEquals(mapped.isbn, "1234567890");
-    assertEquals(mapped.publication_date, "2020-01-01");
+    assertEquals(mapped.publication_year, 2020); // Changed from publication_date string to publication_year integer
+    assertEquals(mapped.publication_date, null); // Now null, to be enriched by AI
     assertEquals(mapped.page_count, 300);
     assertEquals(mapped.cover_image_url, "https://example.com/cover.jpg");
     assertEquals(mapped.goodreads_link, "https://goodreads.com/book/12345");
@@ -345,7 +346,7 @@ Deno.test("RSS Ingestion Unit Tests", async (t) => {
     assertEquals(mapped.user_date_finished, "2025-01-01T08:00:00.000Z");
     assertEquals(mapped.user_date_added, "2024-12-15T18:30:00.000Z");
     assertEquals(mapped.publisher, "Test Publisher");
-    assertEquals(mapped.status, "to_read");
+    assertEquals(mapped.status, "finished"); // RSS feed pulls from "read" shelf
   });
 
   // Restore env

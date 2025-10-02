@@ -39,13 +39,29 @@ To build a fully functional, automated data pipeline and a basic bot that can in
 
 ### 1.6: Core Error Handling & Logging
 
-**Status:** Not Started
+**Status:** Done
 **Description:** Add robust, centralized error handling and logging to the now-functional application.
+
+### 1.7: Production Deployment
+
+**Status:** Draft
+**Description:** Deploy all Edge Functions to production, seed lookup tables, execute historical backfill, and activate RSS ingestion cron job with real data sources.
+
+**Acceptance Criteria:**
+
+1. Production environment variables and secrets are configured in Supabase (GOODREADS_RSS_FEED_URL_READ, GEMINI_API_KEY, etc.)
+2. All Edge Functions (telegram-webhook, seed-lookup-data, csv-backfill, enrich-metadata, rss-ingestion) are deployed to production using `supabase functions deploy`
+3. Lookup tables in production database are seeded with data from YAML files (classifications.yaml, recommendation-sources.yaml)
+4. Historical books from goodreads_read_history.csv are imported into production books table (one-time operation)
+5. RSS ingestion pg_cron job is active and running daily in production to fetch new books from actual Goodreads RSS feed
+6. Production deployment includes verification tests to confirm all functions are accessible and responding correctly
+7. Production deployment is documented with step-by-step instructions including rollback procedures
+8. Post-deployment validation confirms data is correctly loaded and RSS ingestion is functioning
 
 ## Story Progress
 
-- **Total Stories:** 6
-- **Completed:** 5
+- **Total Stories:** 7
+- **Completed:** 6
 - **In Progress:** 0
 - **Not Started:** 1
 
@@ -59,9 +75,12 @@ To build a fully functional, automated data pipeline and a basic bot that can in
 - [x] Database schema created and accessible
 - [x] Basic book addition workflow functional
 - [x] CI/CD pipeline operational with automated tests
-- [ ] RSS feed ingestion working automatically
-- [ ] Historical data imported and enriched
-- [ ] Error handling and logging implemented across all features
+- [x] RSS feed ingestion working automatically
+- [x] Historical data imported and enriched
+- [x] Error handling and logging implemented across all features
+- [ ] All Edge Functions deployed to production with real data sources
+- [ ] Production deployment documented with rollback procedures
+- [ ] Post-deployment validation confirms system functioning correctly
 
 ## Notes
 

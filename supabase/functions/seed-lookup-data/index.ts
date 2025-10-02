@@ -239,8 +239,8 @@ Deno.serve(async (_req: Request) => {
     // Read YAML files
     logger.info("Reading YAML files");
 
-    const classificationsYamlPath = "./project-specs/classifications.yaml";
-    const recommendationSourcesYamlPath = "./project-specs/recommendation-sources.yaml";
+    const classificationsYamlPath = "./classifications.yaml";
+    const recommendationSourcesYamlPath = "./recommendation-sources.yaml";
 
     const classificationsYamlText = await Deno.readTextFile(classificationsYamlPath);
     const recommendationSourcesYamlText = await Deno.readTextFile(recommendationSourcesYamlPath);
