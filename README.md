@@ -578,6 +578,315 @@ supabase functions invoke rss-ingestion --env-file supabase/.env.local
 - **Cron job not running**: Verify pg_cron extension enabled and job scheduled: `SELECT jobname, schedule FROM cron.job;`
 - **Books not appearing**: Check Edge Function logs for parsing errors or XML format changes
 
+## Production Deployment
+
+### Prerequisites
+
+- Supabase CLI installed and authenticated
+- Production Supabase project created
+- All required secrets available (see `.env` file)
+- Tests passing locally (`deno test -A`)
+
+### Step-by-Step Deployment Guide
+
+#### 1. Pre-Deployment Verification
+
+```bash
+# Run all tests
+deno test -A
+
+# Run linting
+deno lint
+
+# Check formatting
+deno fmt --check
+
+# Verify migrations exist
+ls -la supabase/migrations/
+
+# Check Supabase CLI
+supabase --version
+supabase projects list
+```
+
+#### 2. Configure Production Secrets
+
+```bash
+# Create .env file with production secrets (NEVER commit this file)
+# Example .env:
+GOODREADS_RSS_FEED_URL_READ=https://www.goodreads.com/review/list_rss/{user_id}?key={key}&shelf=read
+GOOGLE_GEMINI_API_KEY=AIza...
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_WEBHOOK_SECRET=...
+
+# Upload secrets to production
+supabase secrets set --env-file .env
+
+# Verify secrets are set
+supabase secrets list
+```
+
+**Note:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_ANON_KEY` are automatically provided by Supabase and do not need to be set via `supabase secrets set`.
+
+#### 3. Link to Production and Deploy Functions
+
+```bash
+# Get your project ref from Supabase Dashboard → Settings → General → Reference ID
+# Link local project to production
+supabase link --project-ref <your-project-ref>
+
+# Push database migrations to production
+supabase db push
+
+# Deploy all Edge Functions
+supabase functions deploy
+
+# Verify deployment
+supabase functions list
+```
+
+**Expected Output:**
+
+```
+NAME             | STATUS | VERSION | UPDATED_AT
+-----------------|--------|---------|---------------------
+csv-backfill     | ACTIVE | 1       | 2025-10-02 13:22:12
+enrich-metadata  | ACTIVE | 1       | 2025-10-02 13:22:12
+rss-ingestion    | ACTIVE | 1       | 2025-10-02 13:22:12
+seed-lookup-data | ACTIVE | 1       | 2025-10-02 13:22:12
+telegram-webhook | ACTIVE | 1       | 2025-10-02 13:22:12
+```
+
+#### 4. Seed Production Lookup Tables
+
+```bash
+# Get your anon key from Supabase Dashboard → Settings → API → anon public key
+export ANON_KEY="your-anon-key"
+export PROJECT_REF="your-project-ref"
+
+# Invoke seed-lookup-data function
+curl -X POST "https://${PROJECT_REF}.supabase.co/functions/v1/seed-lookup-data" \
+  -H "Authorization: Bearer ${ANON_KEY}" \
+  -H "Content-Type: application/json"
+```
+
+**Expected Response:**
+
+```json
+{
+  "success": true,
+  "genresInserted": 15,
+  "subgenresInserted": 169,
+  "spiceLevelsInserted": 5,
+  "tropesInserted": 84,
+  "recommendationSourcesInserted": 51
+}
+```
+
+#### 5. Execute Historical CSV Backfill (One-Time)
+
+```bash
+# Import 611 historical books from CSV
+curl -X POST "https://${PROJECT_REF}.supabase.co/functions/v1/csv-backfill" \
+  -H "Authorization: Bearer ${ANON_KEY}" \
+  -H "Content-Type: application/json"
+```
+
+**Expected Response:**
+
+```json
+{
+  "success": true,
+  "booksImported": 421,
+  "booksUpdated": 0,
+  "booksFiltered": 165,
+  "errors": 26,
+  "totalRows": 612
+}
+```
+
+#### 6. Verify RSS Ingestion
+
+```bash
+# Manually trigger RSS ingestion to test
+curl -X POST "https://${PROJECT_REF}.supabase.co/functions/v1/rss-ingestion" \
+  -H "Authorization: Bearer ${ANON_KEY}" \
+  -H "Content-Type: application/json"
+```
+
+**Expected Response:**
+
+```json
+{
+  "success": true,
+  "booksAdded": 9,
+  "booksUpdated": 91,
+  "errors": 0,
+  "errorDetails": []
+}
+```
+
+The `pg_cron` job will automatically run daily at 2 AM UTC to sync new books.
+
+#### 7. Run Production Verification Tests
+
+```bash
+# Run automated verification script
+chmod +x scripts/verify-production.sh
+./scripts/verify-production.sh
+```
+
+**Expected Output:**
+
+```
+✅ PASS: telegram-webhook responding (HTTP 401)
+✅ PASS: seed-lookup-data accessible
+✅ PASS: csv-backfill accessible
+✅ PASS: enrich-metadata accessible (validation working)
+✅ PASS: rss-ingestion accessible and working
+```
+
+#### 8. Post-Deployment Validation
+
+Verify data in production database:
+
+```sql
+-- Check lookup table counts
+SELECT 'genres' as table_name, COUNT(*) as count FROM genres
+UNION ALL SELECT 'subgenres', COUNT(*) FROM subgenres
+UNION ALL SELECT 'tropes', COUNT(*) FROM tropes
+UNION ALL SELECT 'spice_levels', COUNT(*) FROM spice_levels
+UNION ALL SELECT 'recommendation_sources', COUNT(*) FROM recommendation_sources
+ORDER BY table_name;
+
+-- Verify books imported
+SELECT COUNT(*) as total_books FROM books;
+
+-- Check recent books from RSS
+SELECT title, author, user_date_finished, created_at
+FROM books
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+### Important Files for Deployment
+
+The following files MUST be in function directories for successful deployment:
+
+- `supabase/functions/seed-lookup-data/classifications.yaml`
+- `supabase/functions/seed-lookup-data/recommendation-sources.yaml`
+- `supabase/functions/csv-backfill/goodreads_read_history.csv`
+
+Static file bundling is configured in `supabase/config.toml`:
+
+```toml
+[functions.seed-lookup-data]
+static_files = [
+  "./functions/seed-lookup-data/classifications.yaml",
+  "./functions/seed-lookup-data/recommendation-sources.yaml"
+]
+
+[functions.csv-backfill]
+static_files = [
+  "./functions/csv-backfill/goodreads_read_history.csv"
+]
+```
+
+### Rollback Procedure
+
+If deployment fails or causes issues:
+
+**1. Identify last working commit:**
+
+```bash
+git log --oneline -10
+```
+
+**2. Rollback Edge Functions:**
+
+```bash
+# Checkout previous commit
+git checkout <previous-commit-hash>
+
+# Redeploy functions from that commit
+supabase functions deploy
+
+# Return to main branch
+git checkout main
+```
+
+**3. Rollback database (if data corruption):**
+
+- Use Supabase Dashboard → Database → Backups
+- Restore to point-in-time before deployment
+
+**4. Disable cron job (if issues):**
+
+```sql
+SELECT cron.unschedule('daily-rss-ingestion');
+```
+
+### Cost Monitoring
+
+After deployment, monitor Supabase usage to avoid unexpected costs:
+
+1. **Edge Function Invocations**: Dashboard → Edge Functions → Usage
+   - Expected: ~1 RSS ingestion/day, variable Telegram webhook calls
+   - Alert Threshold: >1000/day for any function
+
+2. **Database Storage**: Dashboard → Database → Usage
+   - Expected: ~611 books initially + incremental RSS growth
+   - Alert Threshold: Unexpected >100MB/week growth
+
+3. **External API Costs**:
+   - **Gemini API**: Monitor at [Google AI Studio](https://makersuite.google.com/)
+   - Expected: 1 request per book enrichment
+   - Free tier: 60 requests/minute
+
+4. **Free Tier Limits**:
+   - 500MB database space
+   - 2GB bandwidth
+   - 2 million Edge Function invocations
+
+### Troubleshooting Production Deployment
+
+**Secrets Issues:**
+
+```bash
+# List current secrets
+supabase secrets list
+
+# Update individual secret
+supabase secrets set KEY_NAME="new_value"
+
+# Redeploy affected functions
+supabase functions deploy <function-name>
+```
+
+**Function Not Found Errors:**
+
+```bash
+# Check function deployment status
+supabase functions list
+
+# View function logs
+supabase functions logs <function-name> --limit 50
+```
+
+**Data File Bundling Issues:**
+
+```bash
+# Verify files are in function directories
+ls -la supabase/functions/seed-lookup-data/
+ls -la supabase/functions/csv-backfill/
+
+# Check config.toml has static_files configuration
+grep -A5 "functions.seed-lookup-data" supabase/config.toml
+
+# Redeploy with bundled files
+supabase functions deploy seed-lookup-data csv-backfill
+```
+
 ## Development Workflow
 
 1. Create feature branch from `main`

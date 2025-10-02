@@ -21,30 +21,43 @@ export function createSupabaseClient(url: string, key: string): SupabaseClient {
 
 /**
  * RSS item structure from Goodreads RSS feed
+ * Fields may be strings or CDATA objects from XML parser
  */
 interface RSSItem {
   book_id?: string;
-  title?: string;
+  title?: string | { __cdata: string };
   author_name?: string;
   isbn?: string;
   book_published?: string;
   book?: {
     num_pages?: string;
   };
-  book_image_url?: string;
-  book_large_image_url?: string;
-  link?: string;
+  book_image_url?: string | { __cdata: string };
+  book_large_image_url?: string | { __cdata: string };
+  link?: string | { __cdata: string };
   user_rating?: string;
-  user_read_at?: string;
-  user_date_added?: string;
+  user_read_at?: string | { __cdata: string };
+  user_date_added?: string | { __cdata: string };
   publisher?: string;
 }
 
 /**
  * Parse date string from RSS feed to ISO timestamp
+ * Handles both string dates and CDATA-wrapped dates
  */
-function parseRSSDate(dateStr?: string): string | null {
-  if (!dateStr) return null;
+function parseRSSDate(dateValue?: string | { __cdata: string }): string | null {
+  if (!dateValue) return null;
+
+  // Extract string from CDATA wrapper if present
+  let dateStr: string;
+  if (typeof dateValue === "string") {
+    dateStr = dateValue;
+  } else if (typeof dateValue === "object" && "__cdata" in dateValue) {
+    dateStr = dateValue.__cdata;
+  } else {
+    return null;
+  }
+
   try {
     const date = new Date(dateStr);
     return isNaN(date.getTime()) ? null : date.toISOString();
@@ -54,9 +67,34 @@ function parseRSSDate(dateStr?: string): string | null {
 }
 
 /**
+ * Parse series number from string (handles decimals and ranges)
+ * For ranges like "1-1.5" or "0.1-0.5", takes the first number
+ */
+function parseSeriesNumber(numStr: string): number | null {
+  if (!numStr) return null;
+
+  // Handle ranges: take the first number
+  if (numStr.includes("-")) {
+    numStr = numStr.split("-")[0];
+  }
+
+  const parsed = parseFloat(numStr);
+  return isNaN(parsed) ? null : parsed;
+}
+
+/**
  * Parse series information from book title
+ * Handles multiple Goodreads series formats:
+ * - "Title (Series, #N)" → Standard with comma
+ * - "Title (Series #N)" → Without comma
+ * - "Title (Series Book N)" → "Book" keyword variant
+ * - "Title (Series)" → Series name only, no number
+ * - "Title (Series, #0.1-0.5)" → Range numbers (takes first)
+ *
  * Examples:
  *   "The Good Girl Effect (Salacious Legacy, #1)" → {title: "The Good Girl Effect", series: "Salacious Legacy", number: 1}
+ *   "Flock (The Ravenhood Book 1)" → {title: "Flock", series: "The Ravenhood", number: 1}
+ *   "Audacity (Seraph)" → {title: "Audacity", series: "Seraph", number: null}
  *   "Stand Alone Book" → {title: "Stand Alone Book", series: null, number: null}
  */
 function parseSeriesFromTitle(fullTitle: string): {
@@ -64,24 +102,95 @@ function parseSeriesFromTitle(fullTitle: string): {
   series_name: string | null;
   series_number: number | null;
 } {
-  // Pattern: "Book Title (Series Name, #N)" or "Book Title (Series Name #N)"
-  const seriesPattern = /^(.+?)\s*\(([^,)]+?),?\s*#(\d+(?:\.\d+)?)\)\s*$/;
-  const match = fullTitle.match(seriesPattern);
+  // Ensure fullTitle is a string (defensive against [object Object])
+  const titleStr = String(fullTitle || "");
 
+  // Pattern 1: Standard format with comma and hash: "Title (Series Name, #N)"
+  const pattern1 = /^(.+?)\s*\(([^,)]+?),?\s*#([\d.]+(?:-[\d.]+)?)\)\s*$/;
+
+  // Pattern 2: "Book N" format: "Title (Series Name Book N)"
+  const pattern2 = /^(.+?)\s*\((.+?)\s+Book\s+(\d+(?:\.\d+)?)\)\s*$/i;
+
+  // Pattern 3: Hash without comma: "Title (Series Name #N)"
+  const pattern3 = /^(.+?)\s*\(([^)]+?)\s+#([\d.]+(?:-[\d.]+)?)\)\s*$/;
+
+  // Pattern 4: Series name only (no number): "Title (Series Name)"
+  const pattern4 = /^(.+?)\s*\(([^)]+)\)\s*$/;
+
+  // Try patterns in order of specificity
+  let match = titleStr.match(pattern1);
   if (match) {
     return {
       title: match[1].trim(),
       series_name: match[2].trim(),
-      series_number: parseFloat(match[3]),
+      series_number: parseSeriesNumber(match[3]),
+    };
+  }
+
+  match = titleStr.match(pattern2);
+  if (match) {
+    return {
+      title: match[1].trim(),
+      series_name: match[2].trim(),
+      series_number: parseSeriesNumber(match[3]),
+    };
+  }
+
+  match = titleStr.match(pattern3);
+  if (match) {
+    return {
+      title: match[1].trim(),
+      series_name: match[2].trim(),
+      series_number: parseSeriesNumber(match[3]),
+    };
+  }
+
+  match = titleStr.match(pattern4);
+  if (match) {
+    // Series name only, no number
+    return {
+      title: match[1].trim(),
+      series_name: match[2].trim(),
+      series_number: null,
     };
   }
 
   // No series information found
   return {
-    title: fullTitle.trim(),
+    title: titleStr.trim(),
     series_name: null,
     series_number: null,
   };
+}
+
+/**
+ * Extract string from potential CDATA wrapper object
+ * Handles both plain strings and XML CDATA objects like {"__cdata":"value"}
+ */
+function extractString(value: unknown): string | null {
+  if (!value) return null;
+
+  // If it's already a string, return it
+  if (typeof value === "string") {
+    return value;
+  }
+
+  // If it's an object with __cdata property (XML CDATA wrapper)
+  if (typeof value === "object" && value !== null && "__cdata" in value) {
+    const cdataValue = (value as { __cdata: unknown }).__cdata;
+    return typeof cdataValue === "string" ? cdataValue : null;
+  }
+
+  // Try to stringify if it's some other object (defensive)
+  return String(value);
+}
+
+/**
+ * Extract URL from potential CDATA wrapper object
+ * Alias for extractString for URL-specific usage
+ */
+function extractUrl(value: unknown): string | null {
+  return extractString(value);
 }
 
 /**
@@ -92,6 +201,7 @@ export function mapRSSItemToBook(item: RSSItem): {
   title: string | null;
   author: string | null;
   isbn: string | null;
+  publication_year: number | null;
   publication_date: string | null;
   page_count: number | null;
   series_name: string | null;
@@ -102,31 +212,38 @@ export function mapRSSItemToBook(item: RSSItem): {
   user_date_finished: string | null;
   user_date_added: string | null;
   publisher: string | null;
-  status: "to_read";
+  status: "finished";
+  ingestion_source: "rss";
 } {
   const userRating = item.user_rating ? parseInt(item.user_rating, 10) : null;
   const pageCount = item.book?.num_pages ? parseInt(item.book.num_pages, 10) : null;
   const publicationYear = item.book_published ? parseInt(item.book_published, 10) : null;
 
+  // Extract title from potential CDATA wrapper before parsing series
+  const rawTitle = extractString(item.title) || "";
+
   // Parse series information from title
-  const { title, series_name, series_number } = parseSeriesFromTitle(item.title || "");
+  const { title, series_name, series_number } = parseSeriesFromTitle(rawTitle);
 
   return {
     goodreads_id: item.book_id ? parseInt(item.book_id, 10) : null,
     title: title,
     author: item.author_name || null,
     isbn: item.isbn || null,
-    publication_date: publicationYear ? `${publicationYear}-01-01` : null,
+    publication_year: publicationYear, // Changed from publication_date
+    publication_date: null, // To be enriched by AI later
     page_count: pageCount,
     series_name: series_name,
     series_number: series_number,
-    cover_image_url: item.book_large_image_url || item.book_image_url || null,
-    goodreads_link: item.link || null,
+    cover_image_url: extractUrl(item.book_large_image_url) || extractUrl(item.book_image_url) ||
+      null, // Handle CDATA
+    goodreads_link: extractUrl(item.link) || null, // Handle CDATA
     user_rating: userRating && userRating >= 1 && userRating <= 5 ? userRating : null,
     user_date_finished: parseRSSDate(item.user_read_at),
     user_date_added: parseRSSDate(item.user_date_added),
     publisher: item.publisher || null,
-    status: "to_read" as const,
+    status: "finished" as const, // RSS feed pulls from "read" shelf
+    ingestion_source: "rss" as const, // Track source for debugging
   };
 }
 
@@ -316,7 +433,7 @@ export async function handleRSSIngestion(
       } else {
         results.errors++;
         results.errorDetails.push({
-          title: item.title,
+          title: extractString(item.title) || undefined,
           error: result.error || "Unknown error",
         });
       }
