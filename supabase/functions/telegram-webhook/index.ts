@@ -439,6 +439,7 @@ async function saveBookToDatabase(
         status: "pending",
         user_shelves: ["to-read"],
         user_date_added: new Date().toISOString(),
+        ingestion_source: "bot",
       })
       .select()
       .single();

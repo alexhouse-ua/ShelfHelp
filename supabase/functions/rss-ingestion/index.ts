@@ -3,7 +3,7 @@ import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { createClient, SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { XMLParser } from "npm:fast-xml-parser@4";
 import { createLogger, generateRequestId } from "../_shared/logger.ts";
-import { badRequest, internalError } from "../_shared/error-handler.ts";
+import { badRequest, createErrorResponse, internalError } from "../_shared/error-handler.ts";
 
 /**
  * Default RSS feed fetcher (thin wrapper around fetch for testability)
@@ -368,9 +368,11 @@ export async function handleRSSIngestion(
         status: response.status,
         statusText: response.statusText,
       });
-      return new Response(
-        JSON.stringify({ error: `RSS feed fetch failed: ${response.statusText}` }),
-        { status: 502, headers: { "Content-Type": "application/json" } },
+      return createErrorResponse(
+        `RSS feed fetch failed: ${response.statusText}`,
+        requestId,
+        502,
+        { status: response.status },
       );
     }
 

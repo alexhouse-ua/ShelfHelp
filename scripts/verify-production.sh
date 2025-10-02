@@ -4,10 +4,10 @@
 
 set -e
 
-# Configuration
-PROJECT_REF="wyzuelwotgyoautxjpxv"
+# Configuration - use environment variables with fallback defaults
+PROJECT_REF="${SUPABASE_PROJECT_REF:-wyzuelwotgyoautxjpxv}"
 BASE_URL="https://${PROJECT_REF}.supabase.co/functions/v1"
-ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5enVlbHdvdGd5b2F1dHhqcHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxODY0ODAsImV4cCI6MjA3NDc2MjQ4MH0.KkklGsyLf27_ZptH4m6YlmqUaxS3BVGDWsgstXB5ug0"
+ANON_KEY="${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5enVlbHdvdGd5b2F1dHhqcHh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxODY0ODAsImV4cCI6MjA3NDc2MjQ4MH0.KkklGsyLf27_ZptH4m6YlmqUaxS3BVGDWsgstXB5ug0}"
 
 echo "🔍 Production Verification Tests"
 echo "================================="
