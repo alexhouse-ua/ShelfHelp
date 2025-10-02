@@ -6,53 +6,28 @@ import { extractBookInfo } from "../_shared/gemini-client.ts";
 import { type BookMetadata, searchBook } from "../_shared/book-search.ts";
 import { validateBookInput } from "../_shared/input-validator.ts";
 import { cleanupState, getState, saveState } from "../_shared/conversational-state.ts";
-
-/**
- * Generate a unique request ID for traceability
- */
-function generateRequestId(): string {
-  return crypto.randomUUID();
-}
-
-/**
- * Structured logging helper
- */
-function log(
-  requestId: string,
-  level: "info" | "error",
-  message: string,
-  context?: Record<string, unknown>,
-): void {
-  const logEntry = {
-    requestId,
-    level,
-    message,
-    timestamp: new Date().toISOString(),
-    context: context || {},
-  };
-
-  if (level === "error") {
-    console.error(JSON.stringify(logEntry));
-  } else {
-    console.log(JSON.stringify(logEntry));
-  }
-}
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
+import { unauthorized } from "../_shared/error-handler.ts";
 
 /**
  * Validate webhook secret token from Telegram
  */
-function validateWebhookToken(req: Request, expectedSecret: string, requestId: string): boolean {
+function validateWebhookToken(
+  req: Request,
+  expectedSecret: string,
+  logger: ReturnType<typeof createLogger>,
+): boolean {
   const receivedSecret = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
 
   if (!receivedSecret) {
-    log(requestId, "error", "Missing webhook secret token", {
+    logger.error("Missing webhook secret token", {
       operation: "webhook_validation",
     });
     return false;
   }
 
   if (receivedSecret !== expectedSecret) {
-    log(requestId, "error", "Invalid webhook secret token", {
+    logger.error("Invalid webhook secret token", {
       operation: "webhook_validation",
     });
     return false;
@@ -87,21 +62,22 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Basic /start command handler
 bot.command("start", async (ctx) => {
-  const requestId = crypto.randomUUID();
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
 
   try {
-    log(requestId, "info", "Processing /start command", {
+    logger.info("Processing /start command", {
       operation: "start_command",
       chatId: ctx.chat?.id,
     });
 
     await ctx.reply("Welcome to Shelf Help! 📚\n\nI'm your reading companion assistant.");
 
-    log(requestId, "info", "/start command completed successfully", {
+    logger.info("/start command completed successfully", {
       operation: "start_command",
     });
   } catch (error) {
-    log(requestId, "error", "Error in /start command", {
+    logger.error("Error in /start command", {
       operation: "start_command",
       error: error.message,
       stack: error.stack,
@@ -112,10 +88,11 @@ bot.command("start", async (ctx) => {
 
 // Database connection test command (for development/testing)
 bot.command("dbtest", async (ctx) => {
-  const requestId = crypto.randomUUID();
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
 
   try {
-    log(requestId, "info", "Processing /dbtest command", {
+    logger.info("Processing /dbtest command", {
       operation: "dbtest_command",
       chatId: ctx.chat?.id,
     });
@@ -136,7 +113,7 @@ bot.command("dbtest", async (ctx) => {
       .single();
 
     if (insertError) {
-      log(requestId, "error", "Database write test failed", {
+      logger.error("Database write test failed", {
         operation: "dbtest_write",
         error: insertError.message,
       });
@@ -144,7 +121,7 @@ bot.command("dbtest", async (ctx) => {
       return;
     }
 
-    log(requestId, "info", "Database write test successful", {
+    logger.info("Database write test successful", {
       operation: "dbtest_write",
       bookId: insertData.id,
     });
@@ -157,7 +134,7 @@ bot.command("dbtest", async (ctx) => {
       .single();
 
     if (readError) {
-      log(requestId, "error", "Database read test failed", {
+      logger.error("Database read test failed", {
         operation: "dbtest_read",
         error: readError.message,
       });
@@ -165,7 +142,7 @@ bot.command("dbtest", async (ctx) => {
       return;
     }
 
-    log(requestId, "info", "Database read test successful", {
+    logger.info("Database read test successful", {
       operation: "dbtest_read",
       bookId: readData.id,
     });
@@ -174,7 +151,7 @@ bot.command("dbtest", async (ctx) => {
     const { error: deleteError } = await supabase.from("books").delete().eq("id", insertData.id);
 
     if (deleteError) {
-      log(requestId, "error", "Database cleanup failed", {
+      logger.error("Database cleanup failed", {
         operation: "dbtest_cleanup",
         error: deleteError.message,
       });
@@ -187,11 +164,11 @@ bot.command("dbtest", async (ctx) => {
         `Book ID: ${readData.id}`,
     );
 
-    log(requestId, "info", "/dbtest command completed successfully", {
+    logger.info("/dbtest command completed successfully", {
       operation: "dbtest_command",
     });
   } catch (error) {
-    log(requestId, "error", "Error in /dbtest command", {
+    logger.error("Error in /dbtest command", {
       operation: "dbtest_command",
       error: error.message,
       stack: error.stack,
@@ -202,7 +179,8 @@ bot.command("dbtest", async (ctx) => {
 
 // /addbook command handler
 bot.command("addbook", async (ctx) => {
-  const requestId = crypto.randomUUID();
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
 
   try {
     const chatId = ctx.chat?.id;
@@ -211,7 +189,7 @@ bot.command("addbook", async (ctx) => {
       return;
     }
 
-    log(requestId, "info", "Processing /addbook command", {
+    logger.info("Processing /addbook command", {
       operation: "addbook_command",
       chatId,
     });
@@ -228,7 +206,7 @@ bot.command("addbook", async (ctx) => {
 
     await processBookAddition(ctx, chatId, userInput as string, requestId);
   } catch (error) {
-    log(requestId, "error", "Error in /addbook command", {
+    logger.error("Error in /addbook command", {
       operation: "addbook_command",
       error: error.message,
       stack: error.stack,
@@ -239,7 +217,8 @@ bot.command("addbook", async (ctx) => {
 
 // Handle callback queries (inline keyboard button clicks)
 bot.on("callback_query:data", async (ctx) => {
-  const requestId = crypto.randomUUID();
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
 
   try {
     const chatId = ctx.chat?.id;
@@ -250,7 +229,7 @@ bot.on("callback_query:data", async (ctx) => {
       return;
     }
 
-    log(requestId, "info", "Processing callback query", {
+    logger.info("Processing callback query", {
       operation: "callback_query",
       chatId,
       data,
@@ -264,7 +243,7 @@ bot.on("callback_query:data", async (ctx) => {
 
     await ctx.answerCallbackQuery();
   } catch (error) {
-    log(requestId, "error", "Error in callback query handler", {
+    logger.error("Error in callback query handler", {
       operation: "callback_query",
       error: error.message,
       stack: error.stack,
@@ -290,12 +269,14 @@ async function processBookAddition(
 
   await ctx.reply("🔍 Searching for your book...");
 
+  const logger = createLogger(requestId);
+
   // Extract title and author using Gemini
-  log(requestId, "info", "Extracting book info with Gemini", { chatId });
+  logger.info("Extracting book info with Gemini", { chatId });
   const extraction = await extractBookInfo(userInput);
 
   if ("error" in extraction) {
-    log(requestId, "error", "Gemini extraction failed", {
+    logger.error("Gemini extraction failed", {
       chatId,
       error: extraction.error,
       code: extraction.code,
@@ -316,7 +297,7 @@ async function processBookAddition(
     return;
   }
 
-  log(requestId, "info", "Book info extracted", {
+  logger.info("Book info extracted", {
     chatId,
     title,
     author,
@@ -327,7 +308,7 @@ async function processBookAddition(
   const searchResult = await searchBook(title, author);
 
   if (!searchResult.success || !searchResult.books || searchResult.books.length === 0) {
-    log(requestId, "info", "Book not found", {
+    logger.info("Book not found", {
       chatId,
       title,
       author,
@@ -349,7 +330,7 @@ async function processBookAddition(
   }
 
   // Multiple matches - show options
-  log(requestId, "info", "Multiple books found, asking for clarification", {
+  logger.info("Multiple books found, asking for clarification", {
     chatId,
     count: books.length,
   });
@@ -387,7 +368,9 @@ async function processBookAddition(
       .row();
   });
 
-  await ctx.reply("I found multiple matches. Which one did you mean?", { reply_markup: keyboard });
+  await ctx.reply("I found multiple matches. Which one did you mean?", {
+    reply_markup: keyboard,
+  });
 }
 
 /**
@@ -432,8 +415,10 @@ async function saveBookToDatabase(
   book: BookMetadata,
   requestId: string,
 ): Promise<void> {
+  const logger = createLogger(requestId);
+
   try {
-    log(requestId, "info", "Saving book to database", {
+    logger.info("Saving book to database", {
       chatId,
       title: book.title,
       author: book.author,
@@ -459,7 +444,7 @@ async function saveBookToDatabase(
       .single();
 
     if (error) {
-      log(requestId, "error", "Failed to save book", {
+      logger.error("Failed to save book", {
         chatId,
         error: error.message,
       });
@@ -467,7 +452,7 @@ async function saveBookToDatabase(
       return;
     }
 
-    log(requestId, "info", "Book saved successfully", {
+    logger.info("Book saved successfully", {
       chatId,
       bookId: data.id,
     });
@@ -478,12 +463,15 @@ async function saveBookToDatabase(
     if (book.goodreads_id) message += `\n⭐ Goodreads ID: ${book.goodreads_id}`;
 
     if (book.cover_image_url) {
-      await ctx.replyWithPhoto(book.cover_image_url, { caption: message, parse_mode: "Markdown" });
+      await ctx.replyWithPhoto(book.cover_image_url, {
+        caption: message,
+        parse_mode: "Markdown",
+      });
     } else {
       await ctx.reply(message, { parse_mode: "Markdown" });
     }
   } catch (error) {
-    log(requestId, "error", "Error saving book", {
+    logger.error("Error saving book", {
       chatId,
       error: error.message,
       stack: error.stack,
@@ -498,17 +486,15 @@ const handleUpdate = webhookCallback(bot, "std/http");
 // Main request handler
 Deno.serve(async (req: Request) => {
   const requestId = generateRequestId();
+  const logger = createLogger(requestId);
 
   try {
     // Validate webhook secret token
-    if (!validateWebhookToken(req, webhookSecret, requestId)) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!validateWebhookToken(req, webhookSecret, logger)) {
+      return unauthorized("Unauthorized", requestId);
     }
 
-    log(requestId, "info", "Webhook request received", {
+    logger.info("Webhook request received", {
       operation: "webhook_handler",
       method: req.method,
     });
@@ -516,13 +502,13 @@ Deno.serve(async (req: Request) => {
     // Process the update
     const response = await handleUpdate(req);
 
-    log(requestId, "info", "Webhook request processed successfully", {
+    logger.info("Webhook request processed successfully", {
       operation: "webhook_handler",
     });
 
     return response;
   } catch (error) {
-    log(requestId, "error", "Error processing webhook request", {
+    logger.error("Error processing webhook request", {
       operation: "webhook_handler",
       error: error.message,
       stack: error.stack,

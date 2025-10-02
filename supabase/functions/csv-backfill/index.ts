@@ -2,37 +2,8 @@
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Papa from "npm:papaparse@5";
-
-/**
- * Generate a unique request ID for traceability
- */
-function generateRequestId(): string {
-  return crypto.randomUUID();
-}
-
-/**
- * Structured logging helper
- */
-function log(
-  requestId: string,
-  level: "info" | "error",
-  message: string,
-  context?: Record<string, unknown>,
-): void {
-  const logEntry = {
-    requestId,
-    level,
-    message,
-    timestamp: new Date().toISOString(),
-    context: context || {},
-  };
-
-  if (level === "error") {
-    console.error(JSON.stringify(logEntry));
-  } else {
-    console.log(JSON.stringify(logEntry));
-  }
-}
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
+import { internalError } from "../_shared/error-handler.ts";
 
 /**
  * CSV row structure (from Goodreads export)
@@ -182,7 +153,9 @@ function mapCSVRowToBook(row: GoodreadsCSVRow): Record<string, unknown> | null {
  */
 Deno.serve(async (_req: Request) => {
   const requestId = generateRequestId();
-  log(requestId, "info", "CSV backfill function invoked");
+  const logger = createLogger(requestId);
+
+  logger.info("CSV backfill function invoked");
 
   try {
     // Initialize Supabase client
@@ -191,12 +164,12 @@ Deno.serve(async (_req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Read CSV file
-    log(requestId, "info", "Reading CSV file");
+    logger.info("Reading CSV file");
     const csvPath = "./project-specs/goodreads_read_history.csv";
     const csvText = await Deno.readTextFile(csvPath);
 
     // Parse CSV
-    log(requestId, "info", "Parsing CSV file");
+    logger.info("Parsing CSV file");
     const parseResult = Papa.parse<GoodreadsCSVRow>(csvText, {
       header: true,
       skipEmptyLines: true,
@@ -204,13 +177,13 @@ Deno.serve(async (_req: Request) => {
     });
 
     if (parseResult.errors.length > 0) {
-      log(requestId, "error", "CSV parsing errors encountered", {
+      logger.error("CSV parsing errors encountered", {
         errors: parseResult.errors,
       });
     }
 
     const rows = parseResult.data;
-    log(requestId, "info", `Parsed ${rows.length} rows from CSV`);
+    logger.info(`Parsed ${rows.length} rows from CSV`);
 
     let booksImported = 0;
     let booksUpdated = 0;
@@ -236,7 +209,7 @@ Deno.serve(async (_req: Request) => {
           .maybeSingle();
 
         if (fetchError) {
-          log(requestId, "error", "Failed to check existing book", {
+          logger.error("Failed to check existing book", {
             error: fetchError,
             goodreads_id: bookData.goodreads_id,
           });
@@ -252,7 +225,7 @@ Deno.serve(async (_req: Request) => {
             .eq("goodreads_id", bookData.goodreads_id);
 
           if (updateError) {
-            log(requestId, "error", "Failed to update book", {
+            logger.error("Failed to update book", {
               error: updateError,
               goodreads_id: bookData.goodreads_id,
             });
@@ -265,7 +238,7 @@ Deno.serve(async (_req: Request) => {
           const { error: insertError } = await supabase.from("books").insert(bookData);
 
           if (insertError) {
-            log(requestId, "error", "Failed to insert book", {
+            logger.error("Failed to insert book", {
               error: insertError,
               goodreads_id: bookData.goodreads_id,
             });
@@ -275,7 +248,7 @@ Deno.serve(async (_req: Request) => {
           }
         }
       } catch (error) {
-        log(requestId, "error", "Error processing CSV row", {
+        logger.error("Error processing CSV row", {
           error: String(error),
           row,
         });
@@ -293,24 +266,15 @@ Deno.serve(async (_req: Request) => {
       totalRows: rows.length,
     };
 
-    log(requestId, "info", "CSV backfill completed", summary);
+    logger.info("CSV backfill completed", summary);
 
     return new Response(JSON.stringify(summary), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    log(requestId, "error", "CSV backfill failed", { error: String(error) });
+    logger.error("CSV backfill failed", { error: String(error) });
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return internalError(error instanceof Error ? error.message : String(error), requestId);
   }
 });

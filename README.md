@@ -254,6 +254,207 @@ cp supabase/.env.local.example supabase/.env.local
 deno test -A tests/rss_ingestion.integration.test.ts
 ```
 
+## Error Handling & Logging Standards
+
+ShelfHelp uses centralized error handling and logging utilities for consistent, traceable operations across all Edge Functions.
+
+### Logger Usage
+
+**Import and create logger instance:**
+
+```typescript
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
+
+const requestId = generateRequestId();
+const logger = createLogger(requestId);
+```
+
+**Log levels and when to use them:**
+
+- **info**: Normal operation events (request received, operation completed, data processed)
+- **warn**: Recoverable issues that may require attention (rate limit approaching, fallback used, deprecated feature)
+- **error**: Failures requiring investigation (API errors, database errors, validation failures)
+- **debug**: Detailed debugging information for development (variable states, intermediate results)
+
+**Usage examples:**
+
+```typescript
+// Info logging
+logger.info("Processing book addition", {
+  chatId: 12345,
+  bookTitle: "Example Book",
+});
+
+// Error logging
+logger.error("Failed to save book to database", {
+  error: error.message,
+  bookId: "abc-123",
+});
+
+// Warning logging
+logger.warn("Rate limit approaching", {
+  remaining: 10,
+  resetTime: new Date().toISOString(),
+});
+
+// Debug logging
+logger.debug("Gemini API response received", {
+  model: "gemini-1.5-pro",
+  tokensUsed: 450,
+});
+```
+
+**Log output format:**
+
+```json
+{
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "level": "info",
+  "message": "Book saved successfully",
+  "timestamp": "2025-10-02T00:00:00.000Z",
+  "context": {
+    "chatId": 12345,
+    "bookId": "abc-123"
+  }
+}
+```
+
+### Error Handler Usage
+
+**Import error handlers:**
+
+```typescript
+import {
+  badRequest,
+  forbidden,
+  internalError,
+  notFound,
+  unauthorized,
+} from "../_shared/error-handler.ts";
+```
+
+**HTTP error helper functions:**
+
+| Function          | Status | Use Case                                       |
+| ----------------- | ------ | ---------------------------------------------- |
+| `badRequest()`    | 400    | Invalid input, malformed requests              |
+| `unauthorized()`  | 401    | Missing or invalid authentication              |
+| `forbidden()`     | 403    | Valid auth, insufficient permissions           |
+| `notFound()`      | 404    | Resource doesn't exist                         |
+| `internalError()` | 500    | Unexpected server errors, unhandled exceptions |
+
+**Usage examples:**
+
+```typescript
+// Validation error
+if (!bookId) {
+  return badRequest("Missing required parameter: book_id", requestId);
+}
+
+// Authentication error
+if (!isAuthorized(token)) {
+  return unauthorized("Invalid or expired token", requestId);
+}
+
+// Resource not found
+if (!book) {
+  return notFound("Book not found", requestId, { bookId });
+}
+
+// Internal server error
+try {
+  // ... operation
+} catch (error) {
+  logger.error("Unexpected error", { error: error.message });
+  return internalError("An unexpected error occurred", requestId);
+}
+```
+
+**Error response format:**
+
+```json
+{
+  "error": "Book not found",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "details": {
+    "bookId": "abc-123"
+  }
+}
+```
+
+### Best Practices
+
+**DO:**
+
+- ✅ Always generate a unique `requestId` at the start of each function
+- ✅ Create a logger instance using `createLogger(requestId)`
+- ✅ Use structured context objects for rich logging data
+- ✅ Use appropriate log levels (info/warn/error/debug)
+- ✅ Include the `requestId` in all error responses for traceability
+- ✅ Use error handler helpers instead of manual Response objects
+
+**DON'T:**
+
+- ❌ Log sensitive data (tokens, secrets, passwords, API keys, personal information)
+- ❌ Use `console.log()` directly - always use the logger utility
+- ❌ Create manual error Response objects - use error handler helpers
+- ❌ Skip context objects - they're essential for debugging
+- ❌ Use generic error messages - be specific and actionable
+
+**Example Edge Function structure:**
+
+```typescript
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
+import { badRequest, internalError } from "../_shared/error-handler.ts";
+
+Deno.serve(async (req: Request) => {
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
+
+  logger.info("Function invoked", { method: req.method });
+
+  try {
+    // Validate input
+    const body = await req.json();
+    if (!body.bookId) {
+      return badRequest("Missing book_id", requestId);
+    }
+
+    // Process request
+    logger.info("Processing book", { bookId: body.bookId });
+    const result = await processBook(body.bookId, logger);
+
+    logger.info("Function completed successfully");
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    logger.error("Function failed", {
+      error: error.message,
+      stack: error.stack,
+    });
+    return internalError(error.message, requestId);
+  }
+});
+```
+
+### Troubleshooting
+
+**Common logging issues:**
+
+- **Logs not appearing**: Check Edge Function logs with `supabase functions logs <function-name>`
+- **Missing requestId**: Ensure you're creating logger with `createLogger(requestId)`
+- **Malformed JSON logs**: Verify context objects don't contain circular references
+- **Sensitive data in logs**: Review context objects and remove tokens/secrets/passwords
+
+**Common error handling issues:**
+
+- **Inconsistent error format**: Always use error handler helpers, not manual Response objects
+- **Missing requestId in errors**: Pass `requestId` to all error handler functions
+- **Generic error messages**: Provide specific, actionable error messages for debugging
+- **Leaked error details**: Avoid exposing internal implementation details in production errors
+
 ## Code Quality
 
 ### Linting
