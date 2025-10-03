@@ -8,7 +8,8 @@ import { type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger } from "./logger.ts";
 
 const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-const GEMINI_EMBEDDING_MODEL = "gemini-embedding-001";
+// Use current Gemini text embedding model
+const GEMINI_EMBEDDING_MODEL = "text-embedding-004";
 const GEMINI_EMBEDDING_URL =
   `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_EMBEDDING_MODEL}:embedContent`;
 const EMBEDDING_DIMENSIONS = 768;
@@ -84,11 +85,14 @@ export async function generateMoodEmbedding(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          // Model can be provided in body, though it's also specified in the URL path
+          model: `models/${GEMINI_EMBEDDING_MODEL}`,
           content: {
             parts: [{ text: moodText }],
           },
-          task_type: "SEMANTIC_SIMILARITY",
-          output_dimensionality: EMBEDDING_DIMENSIONS,
+          // Field names follow camelCase per Gemini API
+          taskType: "SEMANTIC_SIMILARITY",
+          outputDimensionality: EMBEDDING_DIMENSIONS,
         }),
         signal: AbortSignal.timeout(5000), // 5 second timeout
       });
