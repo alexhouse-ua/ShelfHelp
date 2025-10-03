@@ -9,6 +9,12 @@ The AI system leverages **LangChain** for LLM integration and **LangGraph** for 
 - **Gemini 1.5 Flash Usage**: For quick, low-cost tasks like intent classification, simple recommendations, and basic data extraction.
 - **Gemini 1.5 Pro Usage**: For complex, high-reasoning tasks like post-read reflection analysis, metadata enrichment, and detailed report generation.
 
+### Embeddings Model (Baseline)
+
+- **Text Embeddings:** Gemini `text-embedding-004` (768 dimensions)
+- **Used by:** Mood-based recommendations (Story 2.2), hybrid search ranking, metadata enrichment signals
+- **Reference:** See External API details in [External API Integration → Gemini Embeddings](./external-api-integration.md#gemini-embeddings-production-baseline)
+
 ## Adoption Policy (New)
 
 ### Why LangChain + LangGraph?
@@ -110,6 +116,8 @@ if (enableTracing) {
 - ❌ Production (use structured logs instead)
 
 ### Hybrid Search Strategy
+
+> Note: Embedding dimensionality must match your database vector type. We standardize on `text-embedding-004` with 768 dimensions, and the `books.embedding` column is `VECTOR(768)`. See [External API Integration → Gemini Embeddings](./external-api-integration.md#gemini-embeddings-production-baseline).
 
 **Default: SQL-based Hybrid Search**
 
