@@ -16,15 +16,16 @@ import {
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const hasSupabaseEnv = Boolean(supabaseUrl && supabaseServiceKey);
-const hasGemini = Boolean(Deno.env.get("GOOGLE_GEMINI_API_KEY"));
-const INTEGRATION_READY = hasSupabaseEnv && hasGemini;
+const geminiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY") || "";
+const hasRealGemini = Boolean(geminiKey && !/^(test-|dummy-|placeholder-|ci-)/i.test(geminiKey));
+const INTEGRATION_READY = hasSupabaseEnv && hasRealGemini;
 
 let supabase!: SupabaseClient;
 if (INTEGRATION_READY) {
   supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 } else {
   console.warn(
-    "Skipping /recommend integration tests: missing env variables (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GOOGLE_GEMINI_API_KEY)",
+    "Skipping /recommend integration tests: missing or non-real env for SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or GOOGLE_GEMINI_API_KEY",
   );
 }
 

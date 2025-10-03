@@ -82,10 +82,16 @@ Deno.test("formatRecommendations - calculates relevance score correctly", () => 
   assertEquals(formatted[0].relevanceScore, 50);
 });
 
-// Integration test for embedding generation (requires API key)
+// Determine if we have a real Gemini API key (not a CI placeholder)
+const GEMINI_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY") || "";
+const HAS_REAL_GEMINI_KEY = Boolean(
+  GEMINI_KEY && !/^(test-|dummy-|placeholder-|ci-)/i.test(GEMINI_KEY),
+);
+
+// Integration test for embedding generation (requires real API key)
 Deno.test({
   name: "generateMoodEmbedding - generates valid embedding vector",
-  ignore: !Deno.env.get("GOOGLE_GEMINI_API_KEY"), // Skip if API key not set
+  ignore: !HAS_REAL_GEMINI_KEY, // Skip if no real key available (avoid CI dummy keys)
   async fn(): Promise<void> {
     const moodText = "something light and funny";
     const requestId = "test-request-id";
