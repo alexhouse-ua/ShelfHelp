@@ -296,7 +296,8 @@ export async function searchByKeywordsOnly(
     // Use text search across title, ai_summary, and genre fields
     const { data, error } = await supabase
       .from("books")
-      .select(`
+      .select(
+        `
         id, 
         title, 
         author, 
@@ -305,7 +306,8 @@ export async function searchByKeywordsOnly(
         themes,
         tone,
         pacing
-      `)
+      `,
+      )
       .eq("status", "to_read")
       .textSearch("title", moodText, { type: "websearch" })
       .limit(limit);
@@ -319,12 +321,14 @@ export async function searchByKeywordsOnly(
       // Fallback to simple LIKE search if text search fails
       const { data: fallbackData, error: fallbackError } = await supabase
         .from("books")
-        .select(`
+        .select(
+          `
           id, 
           title, 
           author, 
           ai_summary
-        `)
+        `,
+        )
         .eq("status", "to_read")
         .or(`title.ilike.%${moodText}%,ai_summary.ilike.%${moodText}%`)
         .limit(limit);
@@ -389,9 +393,7 @@ export async function searchByKeywordsOnly(
  * @param results - Raw search results from hybrid_search_books RPC
  * @returns Formatted recommendations for display
  */
-export function formatRecommendations(
-  results: BookSearchResult[],
-): FormattedRecommendation[] {
+export function formatRecommendations(results: BookSearchResult[]): FormattedRecommendation[] {
   return results.map((result) => ({
     bookId: result.book_id,
     title: result.title,

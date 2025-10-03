@@ -41,9 +41,10 @@ recommendations:
   immediate: []
   future:
     - action: "Add exponential backoff for Gemini 429 and keyword-only fallback on TIMEOUT"
-      refs: [
-        "supabase/functions/_shared/mood-recommendation.ts",
-        "supabase/functions/telegram-webhook/index.ts",
-      ]
+      refs:
+        [
+          "supabase/functions/_shared/mood-recommendation.ts",
+          "supabase/functions/telegram-webhook/index.ts",
+        ]
     - action: "Add unit tests for inline callback handlers"
       refs: ["supabase/functions/telegram-webhook/index.ts"]

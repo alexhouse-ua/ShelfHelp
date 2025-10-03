@@ -39,7 +39,9 @@ async function createTestBook(
 ): Promise<string> {
   // Generate embedding for the book content
   const bookContent = `${title} ${author} ${aiSummary} ${genres.join(" ")} ${
-    themes.join(" ")
+    themes.join(
+      " ",
+    )
   } ${tone}`;
   const embedding = await generateMoodEmbedding(bookContent, "test-setup");
 

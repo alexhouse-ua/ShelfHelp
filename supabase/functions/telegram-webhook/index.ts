@@ -245,9 +245,7 @@ bot.command("recommend", async (ctx) => {
         isKeywordOnlySearch = true;
       } else {
         // Other errors - return error message
-        await ctx.reply(
-          "❌ Unable to process recommendation request. Please try again.",
-        );
+        await ctx.reply("❌ Unable to process recommendation request. Please try again.");
         return;
       }
     }
@@ -810,21 +808,16 @@ async function handleAddToTop(
     }
 
     // Get book title for confirmation
-    const { data: book } = await supabase
-      .from("books")
-      .select("title")
-      .eq("id", bookId)
-      .single();
+    const { data: book } = await supabase.from("books").select("title").eq("id", bookId).single();
 
     logger.info("Book moved to top of queue", {
       operation: "add_to_top",
       bookId,
     });
 
-    await ctx.reply(
-      `✅ **${book?.title || "Book"}** moved to top of your queue!`,
-      { parse_mode: "Markdown" },
-    );
+    await ctx.reply(`✅ **${book?.title || "Book"}** moved to top of your queue!`, {
+      parse_mode: "Markdown",
+    });
   } catch (error) {
     logger.error("Error in add_to_top handler", {
       operation: "add_to_top",
