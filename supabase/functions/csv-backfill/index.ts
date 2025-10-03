@@ -2,37 +2,8 @@
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Papa from "npm:papaparse@5";
-
-/**
- * Generate a unique request ID for traceability
- */
-function generateRequestId(): string {
-  return crypto.randomUUID();
-}
-
-/**
- * Structured logging helper
- */
-function log(
-  requestId: string,
-  level: "info" | "error",
-  message: string,
-  context?: Record<string, unknown>,
-): void {
-  const logEntry = {
-    requestId,
-    level,
-    message,
-    timestamp: new Date().toISOString(),
-    context: context || {},
-  };
-
-  if (level === "error") {
-    console.error(JSON.stringify(logEntry));
-  } else {
-    console.log(JSON.stringify(logEntry));
-  }
-}
+import { createLogger, generateRequestId } from "../_shared/logger.ts";
+import { internalError } from "../_shared/error-handler.ts";
 
 /**
  * CSV row structure (from Goodreads export)
@@ -91,9 +62,34 @@ function parseGoodreadsDate(dateStr: string): string | null {
 }
 
 /**
+ * Parse series number from string (handles decimals and ranges)
+ * For ranges like "1-1.5" or "0.1-0.5", takes the first number
+ */
+function parseSeriesNumber(numStr: string): number | null {
+  if (!numStr) return null;
+
+  // Handle ranges: take the first number
+  if (numStr.includes("-")) {
+    numStr = numStr.split("-")[0];
+  }
+
+  const parsed = parseFloat(numStr);
+  return isNaN(parsed) ? null : parsed;
+}
+
+/**
  * Parse series information from book title
+ * Handles multiple Goodreads series formats:
+ * - "Title (Series, #N)" → Standard with comma
+ * - "Title (Series #N)" → Without comma
+ * - "Title (Series Book N)" → "Book" keyword variant
+ * - "Title (Series)" → Series name only, no number
+ * - "Title (Series, #0.1-0.5)" → Range numbers (takes first)
+ *
  * Examples:
  *   "The Good Girl Effect (Salacious Legacy, #1)" → {title: "The Good Girl Effect", series: "Salacious Legacy", number: 1}
+ *   "Flock (The Ravenhood Book 1)" → {title: "Flock", series: "The Ravenhood", number: 1}
+ *   "Audacity (Seraph)" → {title: "Audacity", series: "Seraph", number: null}
  *   "Stand Alone Book" → {title: "Stand Alone Book", series: null, number: null}
  */
 function parseSeriesFromTitle(fullTitle: string): {
@@ -101,21 +97,62 @@ function parseSeriesFromTitle(fullTitle: string): {
   series_name: string | null;
   series_number: number | null;
 } {
-  // Pattern: "Book Title (Series Name, #N)" or "Book Title (Series Name #N)"
-  const seriesPattern = /^(.+?)\s*\(([^,)]+?),?\s*#(\d+(?:\.\d+)?)\)\s*$/;
-  const match = fullTitle.match(seriesPattern);
+  // Ensure fullTitle is a string (defensive against [object Object])
+  const titleStr = String(fullTitle || "");
 
+  // Pattern 1: Standard format with comma and hash: "Title (Series Name, #N)"
+  const pattern1 = /^(.+?)\s*\(([^,)]+?),?\s*#([\d.]+(?:-[\d.]+)?)\)\s*$/;
+
+  // Pattern 2: "Book N" format: "Title (Series Name Book N)"
+  const pattern2 = /^(.+?)\s*\((.+?)\s+Book\s+(\d+(?:\.\d+)?)\)\s*$/i;
+
+  // Pattern 3: Hash without comma: "Title (Series Name #N)"
+  const pattern3 = /^(.+?)\s*\(([^)]+?)\s+#([\d.]+(?:-[\d.]+)?)\)\s*$/;
+
+  // Pattern 4: Series name only (no number): "Title (Series Name)"
+  const pattern4 = /^(.+?)\s*\(([^)]+)\)\s*$/;
+
+  // Try patterns in order of specificity
+  let match = titleStr.match(pattern1);
   if (match) {
     return {
       title: match[1].trim(),
       series_name: match[2].trim(),
-      series_number: parseFloat(match[3]),
+      series_number: parseSeriesNumber(match[3]),
+    };
+  }
+
+  match = titleStr.match(pattern2);
+  if (match) {
+    return {
+      title: match[1].trim(),
+      series_name: match[2].trim(),
+      series_number: parseSeriesNumber(match[3]),
+    };
+  }
+
+  match = titleStr.match(pattern3);
+  if (match) {
+    return {
+      title: match[1].trim(),
+      series_name: match[2].trim(),
+      series_number: parseSeriesNumber(match[3]),
+    };
+  }
+
+  match = titleStr.match(pattern4);
+  if (match) {
+    // Series name only, no number
+    return {
+      title: match[1].trim(),
+      series_name: match[2].trim(),
+      series_number: null,
     };
   }
 
   // No series information found
   return {
-    title: fullTitle.trim(),
+    title: titleStr.trim(),
     series_name: null,
     series_number: null,
   };
@@ -154,7 +191,7 @@ function mapCSVRowToBook(row: GoodreadsCSVRow): Record<string, unknown> | null {
   const pageCount = row["Number of Pages"] ? parseInt(row["Number of Pages"], 10) : null;
   const publicationYear = row["Year Published"] ? parseInt(row["Year Published"], 10) : null;
 
-  // Parse series information from title
+  // Parse series information from title (handles [object Object] issue)
   const { title, series_name, series_number } = parseSeriesFromTitle(row["Title"] || "");
 
   const book: Record<string, unknown> = {
@@ -164,14 +201,16 @@ function mapCSVRowToBook(row: GoodreadsCSVRow): Record<string, unknown> | null {
     author: row["Author"] || null,
     page_count: pageCount,
     publisher: row["Publisher"] || null,
-    publication_date: publicationYear ? `${publicationYear}-01-01` : null,
+    publication_year: publicationYear, // Changed from publication_date
+    publication_date: null, // To be enriched by AI later
     series_name: series_name,
     series_number: series_number,
     goodreads_link: constructGoodreadsLink(goodreadsId),
-    user_rating: userRating,
+    user_rating: userRating && userRating >= 1 && userRating <= 5 ? userRating : null, // Validate rating range
     user_date_added: parseGoodreadsDate(row["Date Added"]),
     user_date_finished: parseGoodreadsDate(row["Date Read"]),
     status: "finished", // All imported CSV books are "read" → "finished"
+    ingestion_source: "csv", // Track source for debugging
   };
 
   return book;
@@ -182,7 +221,9 @@ function mapCSVRowToBook(row: GoodreadsCSVRow): Record<string, unknown> | null {
  */
 Deno.serve(async (_req: Request) => {
   const requestId = generateRequestId();
-  log(requestId, "info", "CSV backfill function invoked");
+  const logger = createLogger(requestId);
+
+  logger.info("CSV backfill function invoked");
 
   try {
     // Initialize Supabase client
@@ -191,12 +232,12 @@ Deno.serve(async (_req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Read CSV file
-    log(requestId, "info", "Reading CSV file");
-    const csvPath = "./project-specs/goodreads_read_history.csv";
+    logger.info("Reading CSV file");
+    const csvPath = "./goodreads_read_history.csv";
     const csvText = await Deno.readTextFile(csvPath);
 
     // Parse CSV
-    log(requestId, "info", "Parsing CSV file");
+    logger.info("Parsing CSV file");
     const parseResult = Papa.parse<GoodreadsCSVRow>(csvText, {
       header: true,
       skipEmptyLines: true,
@@ -204,13 +245,13 @@ Deno.serve(async (_req: Request) => {
     });
 
     if (parseResult.errors.length > 0) {
-      log(requestId, "error", "CSV parsing errors encountered", {
+      logger.error("CSV parsing errors encountered", {
         errors: parseResult.errors,
       });
     }
 
     const rows = parseResult.data;
-    log(requestId, "info", `Parsed ${rows.length} rows from CSV`);
+    logger.info(`Parsed ${rows.length} rows from CSV`);
 
     let booksImported = 0;
     let booksUpdated = 0;
@@ -236,7 +277,7 @@ Deno.serve(async (_req: Request) => {
           .maybeSingle();
 
         if (fetchError) {
-          log(requestId, "error", "Failed to check existing book", {
+          logger.error("Failed to check existing book", {
             error: fetchError,
             goodreads_id: bookData.goodreads_id,
           });
@@ -252,7 +293,7 @@ Deno.serve(async (_req: Request) => {
             .eq("goodreads_id", bookData.goodreads_id);
 
           if (updateError) {
-            log(requestId, "error", "Failed to update book", {
+            logger.error("Failed to update book", {
               error: updateError,
               goodreads_id: bookData.goodreads_id,
             });
@@ -265,7 +306,7 @@ Deno.serve(async (_req: Request) => {
           const { error: insertError } = await supabase.from("books").insert(bookData);
 
           if (insertError) {
-            log(requestId, "error", "Failed to insert book", {
+            logger.error("Failed to insert book", {
               error: insertError,
               goodreads_id: bookData.goodreads_id,
             });
@@ -275,7 +316,7 @@ Deno.serve(async (_req: Request) => {
           }
         }
       } catch (error) {
-        log(requestId, "error", "Error processing CSV row", {
+        logger.error("Error processing CSV row", {
           error: String(error),
           row,
         });
@@ -293,24 +334,15 @@ Deno.serve(async (_req: Request) => {
       totalRows: rows.length,
     };
 
-    log(requestId, "info", "CSV backfill completed", summary);
+    logger.info("CSV backfill completed", summary);
 
     return new Response(JSON.stringify(summary), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    log(requestId, "error", "CSV backfill failed", { error: String(error) });
+    logger.error("CSV backfill failed", { error: String(error) });
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return internalError(error instanceof Error ? error.message : String(error), requestId);
   }
 });

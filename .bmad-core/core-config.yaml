@@ -14,9 +14,9 @@ architecture:
   architectureShardedLocation: docs/architecture
 customTechnicalDocuments: null
 devLoadAlwaysFiles:
-  - docs/architecture/coding-standards.md
-  - docs/architecture/tech-stack.md
-  - docs/architecture/source-tree.md
+  - docs/architecture/coding-standards-and-conventions.md
+  - docs/architecture/tech-stack-alignment.md
+  - docs/architecture/source-tree-integration.md
   - project-specs/token-efficiency.md
   - CLAUDE.md
 devDebugLog: .ai/debug-log.md

@@ -338,3 +338,15 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+# Edge Function static file bundling
+[functions.seed-lookup-data]
+static_files = [
+  "./functions/seed-lookup-data/classifications.yaml",
+  "./functions/seed-lookup-data/recommendation-sources.yaml"
+]
+
+[functions.csv-backfill]
+static_files = [
+  "./functions/csv-backfill/goodreads_read_history.csv"
+]

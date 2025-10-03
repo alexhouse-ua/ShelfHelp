@@ -53,6 +53,25 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 - [ ] User preference model updates dynamically
 - [ ] Recommendation accuracy improves over time
 
+## Tooling Decision (New)
+
+### Project-Wide Adoption: LangChain + LangGraph
+
+- **Framework-light policy**: Use LangChain/LangGraph only where they add clear value (agentic workflows, stateful conversations, RAG utilities)
+- **Default retrieval path**: SQL-based Hybrid Search via Supabase RPC (embeddings + keyword matching)
+- **LangChain SupabaseVectorStore**: Optional abstraction layer; evaluate per-story
+- **LangSmith tracing**: Optional for debugging; enable only where needed
+- **Performance priority**: Tree-shake imports, isolate LC/LG per function, keep hot paths framework-light
+
+**Story-specific guidance:**
+
+- **2.1 (Queue Prioritization)**: LangChain NOT required; deterministic scoring logic
+- **2.2 (Mood Recommendations)**: Start with SQL Hybrid Search; optional LC retriever
+- **2.3 (Reflection Workflow)**: Use LangGraph for stateful conversation orchestration
+- **2.4 (Rating Analysis)**: Batch Gemini calls; optional LC structured output
+
 ## Notes
 
 This epic transforms the basic bot into an intelligent assistant with learning capabilities. The AI learning loop (reflection → rating → preference update → recommendation) is the core value proposition.
+
+**Technical Foundation**: LangChain + LangGraph adopted project-wide for agentic AI capabilities, with framework-light implementation to maintain Edge Function performance.

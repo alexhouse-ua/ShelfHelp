@@ -2,37 +2,8 @@
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { load } from "npm:js-yaml@4";
-
-/**
- * Generate a unique request ID for traceability
- */
-function generateRequestId(): string {
-  return crypto.randomUUID();
-}
-
-/**
- * Structured logging helper
- */
-function log(
-  requestId: string,
-  level: "info" | "error",
-  message: string,
-  context?: Record<string, unknown>,
-): void {
-  const logEntry = {
-    requestId,
-    level,
-    message,
-    timestamp: new Date().toISOString(),
-    context: context || {},
-  };
-
-  if (level === "error") {
-    console.error(JSON.stringify(logEntry));
-  } else {
-    console.log(JSON.stringify(logEntry));
-  }
-}
+import { createLogger, generateRequestId, type Logger } from "../_shared/logger.ts";
+import { internalError } from "../_shared/error-handler.ts";
 
 /**
  * YAML data structure types
@@ -80,7 +51,7 @@ interface RecommendationSourcesYAML {
 async function seedGenresAndSubgenres(
   supabase: ReturnType<typeof createClient>,
   genres: GenreSubgenreEntry[],
-  requestId: string,
+  logger: Logger,
 ): Promise<{ genresInserted: number; subgenresInserted: number }> {
   let genresInserted = 0;
   let subgenresInserted = 0;
@@ -104,7 +75,7 @@ async function seedGenresAndSubgenres(
       .single();
 
     if (genreError) {
-      log(requestId, "error", `Failed to upsert genre: ${genreName}`, { error: genreError });
+      logger.error(`Failed to upsert genre: ${genreName}`, { error: genreError });
       throw genreError;
     }
 
@@ -118,7 +89,7 @@ async function seedGenresAndSubgenres(
         .upsert({ genre_id: genreId, name: subgenreName }, { onConflict: "genre_id,name" });
 
       if (subgenreError) {
-        log(requestId, "error", `Failed to upsert subgenre: ${subgenreName}`, {
+        logger.error(`Failed to upsert subgenre: ${subgenreName}`, {
           error: subgenreError,
         });
         throw subgenreError;
@@ -137,7 +108,7 @@ async function seedGenresAndSubgenres(
 async function seedSpiceLevels(
   supabase: ReturnType<typeof createClient>,
   spiceLevels: SpiceLevelEntry[],
-  requestId: string,
+  logger: Logger,
 ): Promise<number> {
   let inserted = 0;
 
@@ -150,7 +121,7 @@ async function seedSpiceLevels(
       );
 
     if (error) {
-      log(requestId, "error", `Failed to upsert spice level: ${spiceLevel.Label}`, { error });
+      logger.error(`Failed to upsert spice level: ${spiceLevel.Label}`, { error });
       throw error;
     }
 
@@ -166,7 +137,7 @@ async function seedSpiceLevels(
 async function seedTropes(
   supabase: ReturnType<typeof createClient>,
   tropes: TropeEntry[],
-  requestId: string,
+  logger: Logger,
 ): Promise<number> {
   let inserted = 0;
 
@@ -179,7 +150,7 @@ async function seedTropes(
       .single();
 
     if (genreError || !genreData) {
-      log(requestId, "error", `Genre not found for tropes: ${tropeEntry.Genre}`, {
+      logger.error(`Genre not found for tropes: ${tropeEntry.Genre}`, {
         error: genreError,
       });
       continue;
@@ -194,7 +165,7 @@ async function seedTropes(
         .upsert({ genre_id: genreId, name: tropeName }, { onConflict: "genre_id,name" });
 
       if (error) {
-        log(requestId, "error", `Failed to upsert trope: ${tropeName}`, { error });
+        logger.error(`Failed to upsert trope: ${tropeName}`, { error });
         throw error;
       }
 
@@ -211,7 +182,7 @@ async function seedTropes(
 async function seedRecommendationSources(
   supabase: ReturnType<typeof createClient>,
   recommendationSourcesData: RecommendationSourcesYAML,
-  requestId: string,
+  logger: Logger,
 ): Promise<number> {
   let inserted = 0;
 
@@ -240,7 +211,7 @@ async function seedRecommendationSources(
     );
 
     if (error) {
-      log(requestId, "error", `Failed to upsert recommendation source: ${source.name}`, { error });
+      logger.error(`Failed to upsert recommendation source: ${source.name}`, { error });
       throw error;
     }
 
@@ -255,7 +226,9 @@ async function seedRecommendationSources(
  */
 Deno.serve(async (_req: Request) => {
   const requestId = generateRequestId();
-  log(requestId, "info", "Seed lookup data function invoked");
+  const logger = createLogger(requestId);
+
+  logger.info("Seed lookup data function invoked");
 
   try {
     // Initialize Supabase client
@@ -264,16 +237,16 @@ Deno.serve(async (_req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Read YAML files
-    log(requestId, "info", "Reading YAML files");
+    logger.info("Reading YAML files");
 
-    const classificationsYamlPath = "./project-specs/classifications.yaml";
-    const recommendationSourcesYamlPath = "./project-specs/recommendation-sources.yaml";
+    const classificationsYamlPath = "./classifications.yaml";
+    const recommendationSourcesYamlPath = "./recommendation-sources.yaml";
 
     const classificationsYamlText = await Deno.readTextFile(classificationsYamlPath);
     const recommendationSourcesYamlText = await Deno.readTextFile(recommendationSourcesYamlPath);
 
     // Parse YAML
-    log(requestId, "info", "Parsing YAML files");
+    logger.info("Parsing YAML files");
     const classificationsData = load(classificationsYamlText) as ClassificationsYAML;
     const recommendationSourcesData = load(
       recommendationSourcesYamlText,
@@ -293,28 +266,28 @@ Deno.serve(async (_req: Request) => {
     }
 
     // Seed data
-    log(requestId, "info", "Seeding genres and subgenres");
+    logger.info("Seeding genres and subgenres");
     const { genresInserted, subgenresInserted } = await seedGenresAndSubgenres(
       supabase,
       classificationsData.Genres,
-      requestId,
+      logger,
     );
 
-    log(requestId, "info", "Seeding spice levels");
+    logger.info("Seeding spice levels");
     const spiceLevelsInserted = await seedSpiceLevels(
       supabase,
       classificationsData.Spice_Levels,
-      requestId,
+      logger,
     );
 
-    log(requestId, "info", "Seeding tropes");
-    const tropesInserted = await seedTropes(supabase, classificationsData.Tropes, requestId);
+    logger.info("Seeding tropes");
+    const tropesInserted = await seedTropes(supabase, classificationsData.Tropes, logger);
 
-    log(requestId, "info", "Seeding recommendation sources");
+    logger.info("Seeding recommendation sources");
     const recommendationSourcesInserted = await seedRecommendationSources(
       supabase,
       recommendationSourcesData,
-      requestId,
+      logger,
     );
 
     // Return summary
@@ -327,24 +300,15 @@ Deno.serve(async (_req: Request) => {
       recommendationSourcesInserted,
     };
 
-    log(requestId, "info", "Seed lookup data completed successfully", summary);
+    logger.info("Seed lookup data completed successfully", summary);
 
     return new Response(JSON.stringify(summary), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    log(requestId, "error", "Seed lookup data failed", { error: String(error) });
+    logger.error("Seed lookup data failed", { error: String(error) });
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return internalError(error instanceof Error ? error.message : String(error), requestId);
   }
 });

@@ -6,37 +6,40 @@ This directory contains the epic tracking documents for the Shelf Help Assistant
 
 ### Epic 1: Foundation & Data Ingestion (P0)
 
-**Status:** Not Started
-**Stories:** 6
+**Status:** ✅ Done
+**Stories:** 7
 **Goal:** Build fully functional data pipeline and basic bot
 
 [📄 Epic 1 Details](./epic-1-foundation-data-ingestion.md)
 
 **Stories:**
 
-- 1.1: Minimal Bot & Database Setup
-- 1.2: Conversational Book Addition
-- 1.3: Foundational CI/CD & Testing
-- 1.4: Basic RSS Ingestion
-- 1.5: Historical Backfill & Data Enrichment
-- 1.6: Core Error Handling & Logging
+- ✅ 1.1: Minimal Bot & Database Setup
+- ✅ 1.2: Conversational Book Addition
+- ✅ 1.3: Foundational CI/CD & Testing
+- ✅ 1.4: Basic RSS Ingestion
+- ✅ 1.5: Historical Backfill & Data Enrichment
+- ✅ 1.6: Core Error Handling & Logging
+- ✅ 1.7: Production Deployment
 
 ---
 
 ### Epic 2: AI Intelligence & User Interaction (P1)
 
-**Status:** Not Started (Depends on Epic 1)
+**Status:** Ready to Start (Epic 1 Complete)
 **Stories:** 4
 **Goal:** Implement AI learning loop and personalized recommendations
 
 [📄 Epic 2 Details](./epic-2-ai-intelligence-user-interaction.md)
 
+**Tooling:** LangChain + LangGraph (framework-light policy; SQL Hybrid Search default)
+
 **Stories:**
 
-- 2.1: TBR Queue Prioritization
-- 2.2: Mood-Based Recommendation
-- 2.3: Post-Read Reflection
-- 2.4: AI Ratings & Preference Updates
+- 2.1: TBR Queue Prioritization (deterministic scoring; LC/LG optional)
+- 2.2: Mood-Based Recommendation (SQL Hybrid Search; LC retriever optional)
+- 2.3: Post-Read Reflection (LangGraph stateful workflow)
+- 2.4: AI Ratings & Preference Updates (batch Gemini; LC structured output optional)
 
 ---
 
@@ -70,10 +73,10 @@ Following the greenfield-service workflow:
 
 | Epic      | Stories | Completed | In Progress | Not Started |
 | --------- | ------- | --------- | ----------- | ----------- |
-| Epic 1    | 6       | 0         | 0           | 6           |
+| Epic 1    | 7       | 7         | 0           | 0           |
 | Epic 2    | 4       | 0         | 0           | 4           |
 | Epic 3    | 3       | 0         | 0           | 3           |
-| **Total** | **13**  | **0**     | **0**       | **13**      |
+| **Total** | **14**  | **7**     | **0**       | **7**       |
 
 ## Reference
 
