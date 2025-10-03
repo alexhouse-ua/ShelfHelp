@@ -26,6 +26,10 @@
   },
   "imports": {
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@^2",
-    "grammy": "https://deno.land/x/grammy/mod.ts"
+    "grammy": "https://deno.land/x/grammy/mod.ts",
+    "@langchain/core": "npm:@langchain/core@0.3.x",
+    "@langchain/community": "npm:@langchain/community@0.3.x",
+    "@langchain/langgraph": "npm:@langchain/langgraph@0.2.x",
+    "@langchain/google-genai": "npm:@langchain/google-genai@0.1.x"
   }
 }

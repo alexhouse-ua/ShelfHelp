@@ -215,6 +215,91 @@ bot.command("addbook", async (ctx) => {
   }
 });
 
+// /queue command handler - Display prioritized TBR queue
+bot.command("queue", async (ctx) => {
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
+
+  try {
+    const chatId = ctx.chat?.id;
+    if (!chatId) {
+      await ctx.reply("❌ Unable to identify chat session");
+      return;
+    }
+
+    logger.info("Processing /queue command", {
+      operation: "queue_command",
+      chatId,
+    });
+
+    await ctx.reply("📚 Loading your prioritized reading queue...");
+
+    // Query top 10 books ordered by queue_position
+    const { data: books, error } = await supabase
+      .from("books")
+      .select("id, title, author, queue_position, priority_score, page_count, cover_image_url")
+      .eq("status", "to_read")
+      .order("queue_position", { ascending: true })
+      .limit(10);
+
+    if (error) {
+      logger.error("Failed to fetch queue", {
+        operation: "queue_command",
+        error: error.message,
+      });
+      await ctx.reply("❌ Failed to load your queue. Please try again.");
+      return;
+    }
+
+    if (!books || books.length === 0) {
+      logger.info("Empty queue", { operation: "queue_command" });
+      await ctx.reply(
+        "📚 Your TBR queue is empty!\n\n" + "Use /addbook to add books to your reading list.",
+      );
+      return;
+    }
+
+    // Format queue message
+    let message = "📊 **Your Prioritized Reading Queue**\n\n";
+
+    books.forEach((book, index) => {
+      const position = book.queue_position || index + 1;
+      const score = book.priority_score
+        ? ` (Score: ${(book.priority_score * 100).toFixed(0)}%)`
+        : "";
+      const pages = book.page_count ? ` • ${book.page_count}p` : "";
+
+      message += `${position}. **${book.title}**\n`;
+      message += `   👤 ${book.author}${pages}${score}\n\n`;
+    });
+
+    message += `\n_Showing top ${books.length} books_`;
+
+    // Create inline keyboard with actions
+    const keyboard = new InlineKeyboard()
+      .text("📖 Start Reading Top Book", "start_reading_top")
+      .row()
+      .text("🔄 Refresh Queue", "refresh_queue");
+
+    await ctx.reply(message, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+
+    logger.info("/queue command completed successfully", {
+      operation: "queue_command",
+      booksShown: books.length,
+    });
+  } catch (error) {
+    logger.error("Error in /queue command", {
+      operation: "queue_command",
+      error: error.message,
+      stack: error.stack,
+    });
+    await ctx.reply("❌ An error occurred while loading your queue.");
+  }
+});
+
 // Handle callback queries (inline keyboard button clicks)
 bot.on("callback_query:data", async (ctx) => {
   const requestId = generateRequestId();
