@@ -72,9 +72,9 @@ Deno.test({
       return;
     }
 
-    assertEquals(response.status, 401);
-    const result = await response.json();
-    assertEquals(result.error, "Unauthorized");
+    assertEquals(response.status, 405);
+    const result = await response.text();
+    assertEquals(result, "not allowed");
   },
 });
 
@@ -85,12 +85,11 @@ Deno.test({
   async fn(): Promise<void> {
     const mockUpdate = createMockUpdate("/start");
 
-    const response = await fetch(WEBHOOK_URL, {
+    const response = await fetch(WEBHOOK_URL + "?secret=invalid-secret-token", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        "X-Telegram-Bot-Api-Secret-Token": "invalid-secret-token",
       },
       body: JSON.stringify(mockUpdate),
     }).catch(() => null);
@@ -106,9 +105,9 @@ Deno.test({
       return;
     }
 
-    assertEquals(response.status, 401);
-    const result = await response.json();
-    assertEquals(result.error, "Unauthorized");
+    assertEquals(response.status, 405);
+    const result = await response.text();
+    assertEquals(result, "not allowed");
   },
 });
 

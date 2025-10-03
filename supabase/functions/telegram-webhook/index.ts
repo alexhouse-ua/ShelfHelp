@@ -7,34 +7,6 @@ import { type BookMetadata, searchBook } from "../_shared/book-search.ts";
 import { validateBookInput } from "../_shared/input-validator.ts";
 import { cleanupState, getState, saveState } from "../_shared/conversational-state.ts";
 import { createLogger, generateRequestId } from "../_shared/logger.ts";
-import { unauthorized } from "../_shared/error-handler.ts";
-
-/**
- * Validate webhook secret token from Telegram
- */
-function validateWebhookToken(
-  req: Request,
-  expectedSecret: string,
-  logger: ReturnType<typeof createLogger>,
-): boolean {
-  const receivedSecret = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
-
-  if (!receivedSecret) {
-    logger.error("Missing webhook secret token", {
-      operation: "webhook_validation",
-    });
-    return false;
-  }
-
-  if (receivedSecret !== expectedSecret) {
-    logger.error("Invalid webhook secret token", {
-      operation: "webhook_validation",
-    });
-    return false;
-  }
-
-  return true;
-}
 
 // Initialize bot
 const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
@@ -575,9 +547,25 @@ Deno.serve(async (req: Request) => {
   const logger = createLogger(requestId);
 
   try {
-    // Validate webhook secret token
-    if (!validateWebhookToken(req, webhookSecret, logger)) {
-      return unauthorized("Unauthorized", requestId);
+    // Validate webhook secret via query parameter (Supabase doesn't pass custom headers)
+    const url = new URL(req.url);
+    const receivedSecret = url.searchParams.get("secret");
+
+    logger.info("Secret validation check", {
+      operation: "webhook_validation",
+      hasReceivedSecret: !!receivedSecret,
+      hasConfiguredSecret: !!webhookSecret,
+      secretsMatch: receivedSecret === webhookSecret,
+      receivedLength: receivedSecret?.length,
+      configuredLength: webhookSecret?.length,
+    });
+
+    if (receivedSecret !== webhookSecret) {
+      logger.error("Invalid or missing webhook secret", {
+        operation: "webhook_validation",
+        hasSecret: !!receivedSecret,
+      });
+      return new Response("not allowed", { status: 405 });
     }
 
     logger.info("Webhook request received", {

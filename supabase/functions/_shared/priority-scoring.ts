@@ -240,7 +240,7 @@ export async function calculatePriorityScore(
   weights: ScoringWeights = DEFAULT_WEIGHTS,
 ): Promise<ScoringResult> {
   // Fetch supporting data (use cached reading pace if provided to avoid N+1 queries)
-  const avgPagesPerDay = bookData.cachedReadingPace ?? await fetchUserReadingPace(supabase);
+  const avgPagesPerDay = bookData.cachedReadingPace ?? (await fetchUserReadingPace(supabase));
   const nearestDeadline = await fetchNearestDeadline(supabase, bookData.bookId);
 
   // Calculate individual factor scores
