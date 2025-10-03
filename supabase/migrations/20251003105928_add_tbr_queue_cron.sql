@@ -37,6 +37,3 @@ SELECT cron.schedule(
   ) AS request_id;
   $$
 );
-
--- Add comment documentation
-COMMENT ON FUNCTION cron.schedule IS 'Schedules recurring jobs via pg_cron extension';
