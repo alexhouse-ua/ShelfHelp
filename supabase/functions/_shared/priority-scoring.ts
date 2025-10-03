@@ -39,6 +39,7 @@ export interface BookScoringData {
   hypeFlag: boolean;
   genre: string | null;
   author: string | null;
+  cachedReadingPace?: number; // Optional: Pass cached reading pace to avoid N+1 queries
 }
 
 /**
@@ -238,8 +239,8 @@ export async function calculatePriorityScore(
   bookData: BookScoringData,
   weights: ScoringWeights = DEFAULT_WEIGHTS,
 ): Promise<ScoringResult> {
-  // Fetch supporting data
-  const avgPagesPerDay = await fetchUserReadingPace(supabase);
+  // Fetch supporting data (use cached reading pace if provided to avoid N+1 queries)
+  const avgPagesPerDay = bookData.cachedReadingPace ?? await fetchUserReadingPace(supabase);
   const nearestDeadline = await fetchNearestDeadline(supabase, bookData.bookId);
 
   // Calculate individual factor scores

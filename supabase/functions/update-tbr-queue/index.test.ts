@@ -3,6 +3,16 @@
  */
 import { assertEquals, assertExists } from "jsr:@std/assert@1";
 
+/**
+ * Mock scoring factors type for test data
+ */
+interface MockScoringFactors {
+  readingSpeed: number;
+  deadlineUrgency: number;
+  hypeSignal: number;
+  preferenceAlignment: number;
+}
+
 Deno.test("update-tbr-queue - module exports are available", async () => {
   // Simple smoke test to verify module structure
   // (Full integration test requires live Supabase connection)
@@ -51,12 +61,9 @@ Deno.test("update-tbr-queue - validates book data structure", () => {
 Deno.test("update-tbr-queue - respects priority score ordering", () => {
   // Simulate scoring results
   const scoringResults = [
-    // deno-lint-ignore no-explicit-any
-    { bookId: "book-1", priorityScore: 0.85, factors: {} as any },
-    // deno-lint-ignore no-explicit-any
-    { bookId: "book-2", priorityScore: 0.3, factors: {} as any },
-    // deno-lint-ignore no-explicit-any
-    { bookId: "book-3", priorityScore: 0.65, factors: {} as any },
+    { bookId: "book-1", priorityScore: 0.85, factors: {} as MockScoringFactors },
+    { bookId: "book-2", priorityScore: 0.3, factors: {} as MockScoringFactors },
+    { bookId: "book-3", priorityScore: 0.65, factors: {} as MockScoringFactors },
   ];
 
   // Sort by priority (descending)

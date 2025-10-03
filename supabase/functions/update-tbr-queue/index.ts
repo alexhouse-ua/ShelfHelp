@@ -71,6 +71,17 @@ Deno.serve(async (_req: Request) => {
 
     logger.info(`Processing ${books.length} to_read books`);
 
+    // Fetch reading pace once for all books (optimization to avoid N+1 queries)
+    const { data: readingPaceData } = await supabase
+      .from("user_preferences")
+      .select("preference_value")
+      .eq("preference_key", "reading_pace")
+      .single();
+
+    const cachedReadingPace = readingPaceData?.preference_value?.avg_pages_per_day || 50;
+
+    logger.debug("Fetched reading pace", { avgPagesPerDay: cachedReadingPace });
+
     // Calculate priority scores for all books
     const scoringResults: ScoringResult[] = [];
 
@@ -82,6 +93,7 @@ Deno.serve(async (_req: Request) => {
           hypeFlag: book.hype_flag || false,
           genre: book.genres_primary,
           author: book.author,
+          cachedReadingPace, // Pass cached reading pace to avoid N+1 queries
         };
 
         const result = await calculatePriorityScore(supabase, bookData);

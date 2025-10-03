@@ -53,9 +53,9 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 - [ ] User preference model updates dynamically
 - [ ] Recommendation accuracy improves over time
 
-## Tooling Decision _(New)_
+## Tooling Decision (New)
 
-**Project-Wide Adoption: LangChain + LangGraph**
+### Project-Wide Adoption: LangChain + LangGraph
 
 - **Framework-light policy**: Use LangChain/LangGraph only where they add clear value (agentic workflows, stateful conversations, RAG utilities)
 - **Default retrieval path**: SQL-based Hybrid Search via Supabase RPC (embeddings + keyword matching)

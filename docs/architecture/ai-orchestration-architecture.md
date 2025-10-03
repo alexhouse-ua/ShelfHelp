@@ -9,7 +9,7 @@ The AI system leverages **LangChain** for LLM integration and **LangGraph** for 
 - **Gemini 1.5 Flash Usage**: For quick, low-cost tasks like intent classification, simple recommendations, and basic data extraction.
 - **Gemini 1.5 Pro Usage**: For complex, high-reasoning tasks like post-read reflection analysis, metadata enrichment, and detailed report generation.
 
-## Adoption Policy _(New)_
+## Adoption Policy (New)
 
 ### Why LangChain + LangGraph?
 

@@ -237,7 +237,7 @@ bot.command("queue", async (ctx) => {
     // Query top 10 books ordered by queue_position
     const { data: books, error } = await supabase
       .from("books")
-      .select("id, title, author, queue_position, priority_score, page_count, cover_image_url")
+      .select("id, title, author, queue_position, priority_score, page_count")
       .eq("status", "to_read")
       .order("queue_position", { ascending: true })
       .limit(10);
