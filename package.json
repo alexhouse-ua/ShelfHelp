@@ -17,6 +17,13 @@
     "reading",
     "books"
   ],
+  "dependencies": {
+    "@langchain/community": "^0.3.57",
+    "@langchain/core": "^0.3.78",
+    "@langchain/google-genai": "^0.1.12",
+    "@langchain/langgraph": "^0.2.74",
+    "@langchain/openai": "^0.6.14"
+  },
   "devDependencies": {
     "@types/node": "^20.14.0",
     "husky": "^9.0.11",
