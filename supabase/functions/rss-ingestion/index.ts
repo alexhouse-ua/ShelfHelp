@@ -368,9 +368,12 @@ export async function handleRSSIngestion(
         status: response.status,
         statusText: response.statusText,
       });
-      return createErrorResponse(`RSS feed fetch failed: ${response.statusText}`, requestId, 502, {
-        status: response.status,
-      });
+      return createErrorResponse(
+        `RSS feed fetch failed: ${response.statusText}`,
+        requestId,
+        502,
+        { status: response.status },
+      );
     }
 
     const xmlText = await response.text();
