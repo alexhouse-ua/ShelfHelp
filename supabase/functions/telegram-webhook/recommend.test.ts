@@ -57,7 +57,7 @@ async function createTestBook(
       tone: tone,
       status: "to_read",
       embedding: embedding,
-      ingestion_source: "test",
+      ingestion_source: "bot",
     })
     .select("id")
     .single();
