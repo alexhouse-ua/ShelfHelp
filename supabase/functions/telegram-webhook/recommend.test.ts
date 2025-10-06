@@ -42,9 +42,7 @@ if (hasSupabaseEnv && hasRealGemini) {
       const reason = error.code === "42702"
         ? "function has ambiguous columns (needs migration 20251006155300)"
         : "function not found in database schema";
-      console.warn(
-        `⏭️  Skipping hybrid search integration tests: ${reason}`,
-      );
+      console.warn(`⏭️  Skipping hybrid search integration tests: ${reason}`);
     }
   } catch (_e) {
     console.warn(
