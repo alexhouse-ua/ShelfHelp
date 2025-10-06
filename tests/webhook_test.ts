@@ -8,10 +8,6 @@
  */
 
 import { assertEquals, assertExists } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
-
-// Load environment variables
-const env = await load();
 
 // Test webhook endpoint URL (local Supabase)
 const WEBHOOK_URL = "http://127.0.0.1:54321/functions/v1/telegram-webhook";
@@ -146,8 +142,8 @@ Deno.test({
   async fn(): Promise<void> {
     const { createClient } = await import("jsr:@supabase/supabase-js@2");
 
-    const supabaseUrl = env.SUPABASE_URL || Deno.env.get("SUPABASE_URL");
-    const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error("Supabase credentials not set in environment");

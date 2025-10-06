@@ -18,14 +18,39 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const hasSupabaseEnv = Boolean(supabaseUrl && supabaseServiceKey);
 const geminiKey = Deno.env.get("GOOGLE_GEMINI_API_KEY") || "";
 const hasRealGemini = Boolean(geminiKey && !/^(test-|dummy-|placeholder-|ci-)/i.test(geminiKey));
-const INTEGRATION_READY = hasSupabaseEnv && hasRealGemini;
 
 let supabase!: SupabaseClient;
-if (INTEGRATION_READY) {
+let INTEGRATION_READY = false;
+
+if (hasSupabaseEnv && hasRealGemini) {
   supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+
+  // Verify hybrid_search_books function exists before marking integration ready
+  try {
+    const { error } = await supabase.rpc("hybrid_search_books", {
+      query_embedding: new Array(768).fill(0),
+      query_text: "test",
+      match_threshold: 0.7,
+      limit_count: 1,
+    });
+
+    // Function exists if we get any response (even if it's a data error)
+    // Only skip if we get PGRST202 (function not found)
+    if (!error || error.code !== "PGRST202") {
+      INTEGRATION_READY = true;
+    } else {
+      console.warn(
+        "⏭️  Skipping hybrid search integration tests: hybrid_search_books function not found in database schema",
+      );
+    }
+  } catch (_e) {
+    console.warn(
+      "⏭️  Skipping hybrid search integration tests: unable to verify database function availability",
+    );
+  }
 } else {
   console.warn(
-    "Skipping /recommend integration tests: missing or non-real env for SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or GOOGLE_GEMINI_API_KEY",
+    "⏭️  Skipping /recommend integration tests: missing or non-real env for SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, or GOOGLE_GEMINI_API_KEY",
   );
 }
 
