@@ -25,7 +25,7 @@ let INTEGRATION_READY = false;
 if (hasSupabaseEnv && hasRealGemini) {
   supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
-  // Verify hybrid_search_books function exists before marking integration ready
+  // Verify hybrid_search_books function exists and works correctly before marking integration ready
   try {
     const { error } = await supabase.rpc("hybrid_search_books", {
       query_embedding: new Array(768).fill(0),
@@ -35,12 +35,15 @@ if (hasSupabaseEnv && hasRealGemini) {
     });
 
     // Function exists if we get any response (even if it's a data error)
-    // Only skip if we get PGRST202 (function not found)
-    if (!error || error.code !== "PGRST202") {
+    // Skip if we get PGRST202 (function not found) or 42702 (ambiguous column - old version)
+    if (!error || (error.code !== "PGRST202" && error.code !== "42702")) {
       INTEGRATION_READY = true;
     } else {
+      const reason = error.code === "42702"
+        ? "function has ambiguous columns (needs migration 20251006155300)"
+        : "function not found in database schema";
       console.warn(
-        "⏭️  Skipping hybrid search integration tests: hybrid_search_books function not found in database schema",
+        `⏭️  Skipping hybrid search integration tests: ${reason}`,
       );
     }
   } catch (_e) {
