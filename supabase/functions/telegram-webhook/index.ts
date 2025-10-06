@@ -3,7 +3,7 @@ import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { Bot, InlineKeyboard, webhookCallback } from "https://deno.land/x/grammy/mod.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { extractBookInfo } from "../_shared/gemini-client.ts";
-import { type BookMetadata, searchBook } from "../_shared/book-search.ts";
+import { searchBook } from "../_shared/book-search.ts";
 import { validateBookInput } from "../_shared/input-validator.ts";
 import { cleanupState, getState, saveState } from "../_shared/conversational-state.ts";
 import { createLogger, generateRequestId } from "../_shared/logger.ts";
@@ -13,13 +13,11 @@ import {
   searchByKeywordsOnly,
   searchByMood,
 } from "../_shared/mood-recommendation.ts";
-
 // Initialize bot
 const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const webhookSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
 if (!token) {
   throw new Error("TELEGRAM_BOT_TOKEN is not set");
 }
@@ -32,25 +30,19 @@ if (!supabaseUrl) {
 if (!supabaseServiceKey) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
 }
-
 const bot = new Bot(token);
-
 // Initialize Supabase client
 export const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
 // Basic /start command handler
 bot.command("start", async (ctx) => {
   const requestId = generateRequestId();
   const logger = createLogger(requestId);
-
   try {
     logger.info("Processing /start command", {
       operation: "start_command",
       chatId: ctx.chat?.id,
     });
-
     await ctx.reply("Welcome to Shelf Help! 📚\n\nI'm your reading companion assistant.");
-
     logger.info("/start command completed successfully", {
       operation: "start_command",
     });
@@ -63,33 +55,27 @@ bot.command("start", async (ctx) => {
     throw error;
   }
 });
-
 // Database connection test command (for development/testing)
 bot.command("dbtest", async (ctx) => {
   const requestId = generateRequestId();
   const logger = createLogger(requestId);
-
   try {
     logger.info("Processing /dbtest command", {
       operation: "dbtest_command",
       chatId: ctx.chat?.id,
     });
-
     await ctx.reply("Testing database connection...");
-
     // Test write operation
     const testBook = {
       title: "Database Test Book",
       author: "Test Author",
       status: "pending",
     };
-
     const { data: insertData, error: insertError } = await supabase
       .from("books")
       .insert(testBook)
       .select()
       .single();
-
     if (insertError) {
       logger.error("Database write test failed", {
         operation: "dbtest_write",
@@ -98,19 +84,16 @@ bot.command("dbtest", async (ctx) => {
       await ctx.reply(`❌ Database write failed: ${insertError.message}`);
       return;
     }
-
     logger.info("Database write test successful", {
       operation: "dbtest_write",
       bookId: insertData.id,
     });
-
     // Test read operation
     const { data: readData, error: readError } = await supabase
       .from("books")
       .select("*")
       .eq("id", insertData.id)
       .single();
-
     if (readError) {
       logger.error("Database read test failed", {
         operation: "dbtest_read",
@@ -119,29 +102,24 @@ bot.command("dbtest", async (ctx) => {
       await ctx.reply(`❌ Database read failed: ${readError.message}`);
       return;
     }
-
     logger.info("Database read test successful", {
       operation: "dbtest_read",
       bookId: readData.id,
     });
-
     // Clean up test record
     const { error: deleteError } = await supabase.from("books").delete().eq("id", insertData.id);
-
     if (deleteError) {
       logger.error("Database cleanup failed", {
         operation: "dbtest_cleanup",
         error: deleteError.message,
       });
     }
-
     await ctx.reply(
       `✅ Database connection successful!\n\n` +
         `Write test: ✓\n` +
         `Read test: ✓\n` +
         `Book ID: ${readData.id}`,
     );
-
     logger.info("/dbtest command completed successfully", {
       operation: "dbtest_command",
     });
@@ -154,26 +132,21 @@ bot.command("dbtest", async (ctx) => {
     await ctx.reply(`❌ Test failed: ${error.message}`);
   }
 });
-
 // /addbook command handler
 bot.command("addbook", async (ctx) => {
   const requestId = generateRequestId();
   const logger = createLogger(requestId);
-
   try {
     const chatId = ctx.chat?.id;
     if (!chatId) {
       await ctx.reply("❌ Unable to identify chat session");
       return;
     }
-
     logger.info("Processing /addbook command", {
       operation: "addbook_command",
       chatId,
     });
-
     const userInput = ctx.match; // Text after /addbook
-
     if (!userInput || userInput.trim().length === 0) {
       await ctx.reply(
         "Please provide book details! For example:\n" +
@@ -181,8 +154,7 @@ bot.command("addbook", async (ctx) => {
       );
       return;
     }
-
-    await processBookAddition(ctx, chatId, userInput as string, requestId);
+    await processBookAddition(ctx, chatId, userInput, requestId);
   } catch (error) {
     logger.error("Error in /addbook command", {
       operation: "addbook_command",
@@ -192,26 +164,21 @@ bot.command("addbook", async (ctx) => {
     await ctx.reply("Sorry, something went wrong. Please try again.");
   }
 });
-
 // /recommend command handler - Mood-based book recommendations
 bot.command("recommend", async (ctx) => {
   const requestId = generateRequestId();
   const logger = createLogger(requestId);
-
   try {
     const chatId = ctx.chat?.id;
     if (!chatId) {
       await ctx.reply("❌ Unable to identify chat session");
       return;
     }
-
     logger.info("Processing /recommend command", {
       operation: "recommend_command",
       chatId,
     });
-
     const moodText = ctx.match; // Text after /recommend
-
     if (!moodText || moodText.trim().length === 0) {
       await ctx.reply(
         "Please describe your reading mood! For example:\n\n" +
@@ -221,21 +188,17 @@ bot.command("recommend", async (ctx) => {
       );
       return;
     }
-
     await ctx.reply("🔍 Searching for books that match your mood...");
-
     // Generate embedding for mood query
-    let embedding: number[] | null = null;
+    let embedding = null;
     let isKeywordOnlySearch = false;
-
     try {
-      embedding = await generateMoodEmbedding(moodText as string, requestId);
+      embedding = await generateMoodEmbedding(moodText, requestId);
     } catch (error) {
       logger.error("Failed to generate embedding", {
         operation: "recommend_command",
         error: error instanceof Error ? error.message : String(error),
       });
-
       // Check if it's a timeout - use keyword fallback
       if (error instanceof Error && error.message === "TIMEOUT") {
         logger.info("Using keyword-only fallback due to timeout", {
@@ -249,26 +212,13 @@ bot.command("recommend", async (ctx) => {
         return;
       }
     }
-
     // Search books by mood (hybrid or keyword-only)
     let results;
     try {
       if (isKeywordOnlySearch) {
-        results = await searchByKeywordsOnly(
-          supabase,
-          moodText as string,
-          requestId,
-          10, // Get more results for pagination
-        );
+        results = await searchByKeywordsOnly(supabase, moodText, requestId, 10);
       } else {
-        results = await searchByMood(
-          supabase,
-          moodText as string,
-          embedding!,
-          requestId,
-          10, // Get more results for pagination
-          0.5, // Lower threshold for broader matches
-        );
+        results = await searchByMood(supabase, moodText, embedding, requestId, 10, 0.5);
       }
     } catch (searchError) {
       logger.error("Search failed", {
@@ -279,7 +229,6 @@ bot.command("recommend", async (ctx) => {
       await ctx.reply("❌ Unable to search for recommendations. Please try again.");
       return;
     }
-
     if (!results || results.length === 0) {
       logger.info("No matching books found", {
         operation: "recommend_command",
@@ -291,7 +240,6 @@ bot.command("recommend", async (ctx) => {
       );
       return;
     }
-
     // Store search results in conversational state for pagination
     await saveState(
       supabase,
@@ -312,46 +260,37 @@ bot.command("recommend", async (ctx) => {
       },
       "mood_search",
     );
-
     // Format and send top 3 recommendations
     const topResults = results.slice(0, 3);
     const formatted = formatRecommendations(topResults);
-
     let message = "📚 **Here are my top recommendations for your mood:**\n\n";
-
     // Add disclaimer for keyword-only search
     if (isKeywordOnlySearch) {
       message = "📚 **Here are keyword-based recommendations for your mood:**\n" +
         "_Using keyword search (semantic search unavailable)_\n\n";
     }
-
     formatted.forEach((rec, index) => {
       message += `${index + 1}. **${rec.title}**\n`;
       message += `   👤 ${rec.author}\n`;
       message += `   📖 ${rec.summary}\n`;
       message += `   ⭐ Relevance: ${rec.relevanceScore}%\n\n`;
     });
-
     // Create inline keyboard with action buttons
     const keyboard = new InlineKeyboard();
-
     topResults.forEach((result) => {
       keyboard
         .text("📌 Add to Top", `add_to_top:${result.book_id}`)
         .text("📖 Tell Me More", `tell_more:${result.book_id}`)
         .row();
     });
-
     // Add "Show More" button if there are more results
     if (results.length > 3) {
       keyboard.text("🔍 Show More Results", "show_more:3");
     }
-
     await ctx.reply(message, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
-
     logger.info("/recommend command completed successfully", {
       operation: "recommend_command",
       resultCount: results.length,
@@ -366,34 +305,30 @@ bot.command("recommend", async (ctx) => {
     await ctx.reply("❌ An error occurred while searching for recommendations.");
   }
 });
-
 // /queue command handler - Display prioritized TBR queue
 bot.command("queue", async (ctx) => {
   const requestId = generateRequestId();
   const logger = createLogger(requestId);
-
   try {
     const chatId = ctx.chat?.id;
     if (!chatId) {
       await ctx.reply("❌ Unable to identify chat session");
       return;
     }
-
     logger.info("Processing /queue command", {
       operation: "queue_command",
       chatId,
     });
-
     await ctx.reply("📚 Loading your prioritized reading queue...");
-
     // Query top 10 books ordered by queue_position
     const { data: books, error } = await supabase
       .from("books")
       .select("id, title, author, queue_position, priority_score, page_count")
       .eq("status", "to_read")
-      .order("queue_position", { ascending: true })
+      .order("queue_position", {
+        ascending: true,
+      })
       .limit(10);
-
     if (error) {
       logger.error("Failed to fetch queue", {
         operation: "queue_command",
@@ -402,42 +337,36 @@ bot.command("queue", async (ctx) => {
       await ctx.reply("❌ Failed to load your queue. Please try again.");
       return;
     }
-
     if (!books || books.length === 0) {
-      logger.info("Empty queue", { operation: "queue_command" });
+      logger.info("Empty queue", {
+        operation: "queue_command",
+      });
       await ctx.reply(
         "📚 Your TBR queue is empty!\n\n" + "Use /addbook to add books to your reading list.",
       );
       return;
     }
-
     // Format queue message
     let message = "📊 **Your Prioritized Reading Queue**\n\n";
-
     books.forEach((book, index) => {
       const position = book.queue_position || index + 1;
       const score = book.priority_score
         ? ` (Score: ${(book.priority_score * 100).toFixed(0)}%)`
         : "";
       const pages = book.page_count ? ` • ${book.page_count}p` : "";
-
       message += `${position}. **${book.title}**\n`;
       message += `   👤 ${book.author}${pages}${score}\n\n`;
     });
-
     message += `\n_Showing top ${books.length} books_`;
-
     // Create inline keyboard with actions
     const keyboard = new InlineKeyboard()
       .text("📖 Start Reading Top Book", "start_reading_top")
       .row()
       .text("🔄 Refresh Queue", "refresh_queue");
-
     await ctx.reply(message, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
-
     logger.info("/queue command completed successfully", {
       operation: "queue_command",
       booksShown: books.length,
@@ -451,51 +380,44 @@ bot.command("queue", async (ctx) => {
     await ctx.reply("❌ An error occurred while loading your queue.");
   }
 });
-
 // Handle callback queries (inline keyboard button clicks)
 bot.on("callback_query:data", async (ctx) => {
   const requestId = generateRequestId();
   const logger = createLogger(requestId);
-
   try {
     const chatId = ctx.chat?.id;
     const data = ctx.callbackQuery.data;
-
     if (!chatId) {
-      await ctx.answerCallbackQuery({ text: "Session error" });
+      await ctx.answerCallbackQuery({
+        text: "Session error",
+      });
       return;
     }
-
     logger.info("Processing callback query", {
       operation: "callback_query",
       chatId,
       data,
     });
-
     // Handle book selection from inline keyboard
     if (data.startsWith("select_book_")) {
       const bookIndex = parseInt(data.replace("select_book_", ""), 10);
       await handleBookSelection(ctx, chatId, bookIndex, requestId);
     }
-
     // Handle "Add to Top" action from recommendation
     if (data.startsWith("add_to_top:")) {
       const bookId = data.replace("add_to_top:", "");
       await handleAddToTop(ctx, chatId, bookId, requestId);
     }
-
     // Handle "Tell Me More" action from recommendation
     if (data.startsWith("tell_more:")) {
       const bookId = data.replace("tell_more:", "");
       await handleTellMeMore(ctx, chatId, bookId, requestId);
     }
-
     // Handle "Show More" pagination action
     if (data.startsWith("show_more:")) {
       const offset = parseInt(data.replace("show_more:", ""), 10);
       await handleShowMore(ctx, chatId, offset, requestId);
     }
-
     await ctx.answerCallbackQuery();
   } catch (error) {
     logger.error("Error in callback query handler", {
@@ -505,31 +427,22 @@ bot.on("callback_query:data", async (ctx) => {
     });
   }
 });
-
 /**
  * Process book addition from natural language input
  */
-async function processBookAddition(
-  // deno-lint-ignore no-explicit-any
-  ctx: any,
-  chatId: number,
-  userInput: string,
-  requestId: string,
-): Promise<void> {
+async function processBookAddition(ctx, chatId, userInput, requestId): Promise<void> {
   // Input length validation
   if (userInput.length > 700) {
     await ctx.reply("Input too long. Please keep it under 700 characters.");
     return;
   }
-
   await ctx.reply("🔍 Searching for your book...");
-
   const logger = createLogger(requestId);
-
   // Extract title and author using Gemini
-  logger.info("Extracting book info with Gemini", { chatId });
+  logger.info("Extracting book info with Gemini", {
+    chatId,
+  });
   const extraction = await extractBookInfo(userInput);
-
   if ("error" in extraction) {
     logger.error("Gemini extraction failed", {
       chatId,
@@ -542,26 +455,21 @@ async function processBookAddition(
     );
     return;
   }
-
   const { title, author, confidence } = extraction;
-
   // Validate extracted data
   const validation = validateBookInput(title, author);
   if (!validation.valid) {
     await ctx.reply(`❌ ${validation.error}`);
     return;
   }
-
   logger.info("Book info extracted", {
     chatId,
     title,
     author,
     confidence,
   });
-
   // Search for book across multiple sources
   const searchResult = await searchBook(title, author);
-
   if (!searchResult.success || !searchResult.books || searchResult.books.length === 0) {
     logger.info("Book not found", {
       chatId,
@@ -575,21 +483,17 @@ async function processBookAddition(
     );
     return;
   }
-
   const books = searchResult.books;
-
   // Single match - save directly
   if (books.length === 1) {
     await saveBookToDatabase(ctx, chatId, books[0], requestId);
     return;
   }
-
   // Multiple matches - show options
   logger.info("Multiple books found, asking for clarification", {
     chatId,
     count: books.length,
   });
-
   // Save search results to state
   await saveState(
     supabase,
@@ -609,7 +513,6 @@ async function processBookAddition(
     },
     "book_selection",
   );
-
   // Create inline keyboard with options
   const keyboard = new InlineKeyboard();
   books.slice(0, 5).forEach((book, index) => {
@@ -622,63 +525,41 @@ async function processBookAddition(
       )
       .row();
   });
-
   await ctx.reply("I found multiple matches. Which one did you mean?", {
     reply_markup: keyboard,
   });
 }
-
 /**
  * Handle user's book selection from inline keyboard
  */
-async function handleBookSelection(
-  // deno-lint-ignore no-explicit-any
-  ctx: any,
-  chatId: number,
-  bookIndex: number,
-  requestId: string,
-): Promise<void> {
+async function handleBookSelection(ctx, chatId, bookIndex, requestId): Promise<void> {
   // Retrieve state
   const state = await getState(supabase, chatId);
-
   if (!state || !state.state_data.search_results) {
     await ctx.reply("Session expired. Please try searching again.");
     return;
   }
-
   const selectedBook = state.state_data.search_results[bookIndex];
-
   if (!selectedBook) {
     await ctx.reply("Invalid selection. Please try again.");
     return;
   }
-
   // Clean up state
   await cleanupState(supabase, chatId);
-
   // Save book to database
-  await saveBookToDatabase(ctx, chatId, selectedBook as BookMetadata, requestId);
+  await saveBookToDatabase(ctx, chatId, selectedBook, requestId);
 }
-
 /**
  * Save book to database and send confirmation
  */
-async function saveBookToDatabase(
-  // deno-lint-ignore no-explicit-any
-  ctx: any,
-  chatId: number,
-  book: BookMetadata,
-  requestId: string,
-): Promise<void> {
+async function saveBookToDatabase(ctx, chatId, book, requestId): Promise<void> {
   const logger = createLogger(requestId);
-
   try {
     logger.info("Saving book to database", {
       chatId,
       title: book.title,
       author: book.author,
     });
-
     const { data, error } = await supabase
       .from("books")
       .insert({
@@ -698,7 +579,6 @@ async function saveBookToDatabase(
       })
       .select()
       .single();
-
     if (error) {
       logger.error("Failed to save book", {
         chatId,
@@ -707,24 +587,23 @@ async function saveBookToDatabase(
       await ctx.reply("❌ Failed to save book. Please try again.");
       return;
     }
-
     logger.info("Book saved successfully", {
       chatId,
       bookId: data.id,
     });
-
     // Send confirmation with cover image if available
     let message = `✅ Added to your reading list!\n\n📚 **${book.title}**\n👤 ${book.author}`;
     if (book.page_count) message += `\n📖 ${book.page_count} pages`;
     if (book.goodreads_id) message += `\n⭐ Goodreads ID: ${book.goodreads_id}`;
-
     if (book.cover_image_url) {
       await ctx.replyWithPhoto(book.cover_image_url, {
         caption: message,
         parse_mode: "Markdown",
       });
     } else {
-      await ctx.reply(message, { parse_mode: "Markdown" });
+      await ctx.reply(message, {
+        parse_mode: "Markdown",
+      });
     }
   } catch (error) {
     logger.error("Error saving book", {
@@ -735,33 +614,25 @@ async function saveBookToDatabase(
     await ctx.reply("❌ An error occurred while saving the book.");
   }
 }
-
 /**
  * Handle "Add to Top" callback - Move book to top of queue
  */
-async function handleAddToTop(
-  // deno-lint-ignore no-explicit-any
-  ctx: any,
-  chatId: number,
-  bookId: string,
-  requestId: string,
-): Promise<void> {
+async function handleAddToTop(ctx, chatId, bookId, requestId): Promise<void> {
   const logger = createLogger(requestId);
-
   try {
     logger.info("Processing add_to_top callback", {
       chatId,
       bookId,
       operation: "add_to_top",
     });
-
     // Get all books with to_read status ordered by queue_position
     const { data: allBooks, error: fetchError } = await supabase
       .from("books")
       .select("id, queue_position")
       .eq("status", "to_read")
-      .order("queue_position", { ascending: true });
-
+      .order("queue_position", {
+        ascending: true,
+      });
     if (fetchError) {
       logger.error("Failed to fetch queue for reordering", {
         operation: "add_to_top",
@@ -770,16 +641,16 @@ async function handleAddToTop(
       await ctx.reply("❌ Failed to update queue. Please try again.");
       return;
     }
-
     // Update all other books' positions (shift down)
     if (allBooks && allBooks.length > 0) {
       for (let i = 0; i < allBooks.length; i++) {
         if (allBooks[i].id !== bookId) {
           const { error: updateError } = await supabase
             .from("books")
-            .update({ queue_position: i + 2 })
+            .update({
+              queue_position: i + 2,
+            })
             .eq("id", allBooks[i].id);
-
           if (updateError) {
             logger.error("Failed to update queue position", {
               operation: "add_to_top",
@@ -790,13 +661,13 @@ async function handleAddToTop(
         }
       }
     }
-
     // Set selected book to position 1
     const { error: updateError } = await supabase
       .from("books")
-      .update({ queue_position: 1 })
+      .update({
+        queue_position: 1,
+      })
       .eq("id", bookId);
-
     if (updateError) {
       logger.error("Failed to update book position", {
         operation: "add_to_top",
@@ -806,15 +677,12 @@ async function handleAddToTop(
       await ctx.reply("❌ Failed to update queue. Please try again.");
       return;
     }
-
     // Get book title for confirmation
     const { data: book } = await supabase.from("books").select("title").eq("id", bookId).single();
-
     logger.info("Book moved to top of queue", {
       operation: "add_to_top",
       bookId,
     });
-
     await ctx.reply(`✅ **${book?.title || "Book"}** moved to top of your queue!`, {
       parse_mode: "Markdown",
     });
@@ -827,26 +695,17 @@ async function handleAddToTop(
     await ctx.reply("❌ An error occurred while updating the queue.");
   }
 }
-
 /**
  * Handle "Tell Me More" callback - Display full book metadata
  */
-async function handleTellMeMore(
-  // deno-lint-ignore no-explicit-any
-  ctx: any,
-  chatId: number,
-  bookId: string,
-  requestId: string,
-): Promise<void> {
+async function handleTellMeMore(ctx, chatId, bookId, requestId): Promise<void> {
   const logger = createLogger(requestId);
-
   try {
     logger.info("Processing tell_more callback", {
       chatId,
       bookId,
       operation: "tell_more",
     });
-
     // Fetch full book metadata
     const { data: book, error } = await supabase
       .from("books")
@@ -855,7 +714,6 @@ async function handleTellMeMore(
       )
       .eq("id", bookId)
       .single();
-
     if (error || !book) {
       logger.error("Failed to fetch book details", {
         operation: "tell_more",
@@ -865,45 +723,36 @@ async function handleTellMeMore(
       await ctx.reply("❌ Failed to load book details. Please try again.");
       return;
     }
-
     // Format detailed message
     let message = `📖 **${book.title}**\n`;
     message += `👤 **Author:** ${book.author}\n\n`;
-
     if (book.ai_summary) {
       message += `📝 **Summary:**\n${book.ai_summary}\n\n`;
     }
-
     if (book.genres_primary && book.genres_primary.length > 0) {
       message += `🏷️ **Genres:** ${book.genres_primary.join(", ")}\n`;
     }
-
     if (book.themes && book.themes.length > 0) {
       message += `🎭 **Themes:** ${book.themes.join(", ")}\n`;
     }
-
     if (book.tone) {
       message += `🎵 **Tone:** ${book.tone}\n`;
     }
-
     if (book.pacing) {
       message += `⚡ **Pacing:** ${book.pacing}\n`;
     }
-
     if (book.page_count) {
       message += `📄 **Pages:** ${book.page_count}\n`;
     }
-
     if (book.publication_date) {
       message += `📅 **Published:** ${book.publication_date}\n`;
     }
-
     if (book.goodreads_link) {
       message += `\n🔗 [View on Goodreads](${book.goodreads_link})`;
     }
-
-    await ctx.reply(message, { parse_mode: "Markdown" });
-
+    await ctx.reply(message, {
+      parse_mode: "Markdown",
+    });
     logger.info("Book details sent", {
       operation: "tell_more",
       bookId,
@@ -917,29 +766,19 @@ async function handleTellMeMore(
     await ctx.reply("❌ An error occurred while loading book details.");
   }
 }
-
 /**
  * Handle "Show More" callback - Display next batch of recommendations
  */
-async function handleShowMore(
-  // deno-lint-ignore no-explicit-any
-  ctx: any,
-  chatId: number,
-  offset: number,
-  requestId: string,
-): Promise<void> {
+async function handleShowMore(ctx, chatId, offset, requestId): Promise<void> {
   const logger = createLogger(requestId);
-
   try {
     logger.info("Processing show_more callback", {
       chatId,
       offset,
       operation: "show_more",
     });
-
     // Retrieve search state
     const state = await getState(supabase, chatId);
-
     if (!state || state.state_data.workflow !== "mood_recommendation") {
       logger.info("Search state expired", {
         operation: "show_more",
@@ -950,48 +789,38 @@ async function handleShowMore(
       );
       return;
     }
-
     const allResults = state.state_data.all_results;
-
     if (!allResults || offset >= allResults.length) {
       await ctx.reply("You've seen all available recommendations!");
       return;
     }
-
     // Get next 3 results
     const nextResults = allResults.slice(offset, offset + 3);
     const formatted = formatRecommendations(nextResults);
-
     let message = "📚 **More recommendations for your mood:**\n\n";
-
     formatted.forEach((rec, index) => {
       message += `${offset + index + 1}. **${rec.title}**\n`;
       message += `   👤 ${rec.author}\n`;
       message += `   📖 ${rec.summary}\n`;
       message += `   ⭐ Relevance: ${rec.relevanceScore}%\n\n`;
     });
-
     // Create inline keyboard with action buttons
     const keyboard = new InlineKeyboard();
-
     nextResults.forEach((result) => {
       keyboard
         .text("📌 Add to Top", `add_to_top:${result.book_id}`)
         .text("📖 Tell Me More", `tell_more:${result.book_id}`)
         .row();
     });
-
     // Add "Show More" button if there are more results
     const newOffset = offset + 3;
     if (newOffset < allResults.length) {
       keyboard.text("🔍 Show More Results", `show_more:${newOffset}`);
     }
-
     await ctx.reply(message, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
-
     logger.info("More results displayed", {
       operation: "show_more",
       offset,
@@ -1006,30 +835,24 @@ async function handleShowMore(
     await ctx.reply("❌ An error occurred while loading more results.");
   }
 }
-
 // Create webhook callback handler with secret token validation
 const handleUpdate = webhookCallback(bot, "std/http", {
   secretToken: webhookSecret,
 });
-
 // Main request handler
-Deno.serve(async (req: Request) => {
+Deno.serve(async (req) => {
   const requestId = generateRequestId();
   const logger = createLogger(requestId);
-
   try {
     logger.info("Webhook request received", {
       operation: "webhook_handler",
       method: req.method,
     });
-
     // Process the update (grammY validates secret token automatically)
     const response = await handleUpdate(req);
-
     logger.info("Webhook request processed successfully", {
       operation: "webhook_handler",
     });
-
     return response;
   } catch (error) {
     logger.error("Error processing webhook request", {
@@ -1037,10 +860,16 @@ Deno.serve(async (req: Request) => {
       error: error.message,
       stack: error.stack,
     });
-
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Internal server error",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
   }
 });
