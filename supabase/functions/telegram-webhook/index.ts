@@ -573,7 +573,6 @@ async function saveBookToDatabase(ctx, chatId, book, requestId): Promise<void> {
         publisher: book.publisher,
         publication_date: book.publication_date,
         status: "pending",
-        user_shelves: ["to-read"],
         user_date_added: new Date().toISOString(),
         ingestion_source: "bot",
       })
