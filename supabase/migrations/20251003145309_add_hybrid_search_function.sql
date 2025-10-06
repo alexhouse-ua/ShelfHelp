@@ -43,16 +43,16 @@ BEGIN
       -- Full-text search rank across title, summary, genres, themes
       ts_rank(
         to_tsvector('english',
-          title || ' ' ||
-          COALESCE(ai_summary, '') || ' ' ||
-          array_to_string(COALESCE(genres_primary, ARRAY[]::TEXT[]), ' ') || ' ' ||
-          array_to_string(COALESCE(themes, ARRAY[]::TEXT[]), ' ') || ' ' ||
-          COALESCE(tone, '')
+          books.title || ' ' ||
+          COALESCE(books.ai_summary, '') || ' ' ||
+          array_to_string(COALESCE(books.genres_primary, ARRAY[]::TEXT[]), ' ') || ' ' ||
+          array_to_string(COALESCE(books.themes, ARRAY[]::TEXT[]), ' ') || ' ' ||
+          COALESCE(books.tone, '')
         ),
         plainto_tsquery('english', query_text)
       ) AS kw_rank
     FROM books
-    WHERE status = 'to_read'
+    WHERE books.status = 'to_read'
   )
   SELECT
     vs.id AS book_id,

@@ -1,19 +1,11 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
-import {
-  Bot,
-  InlineKeyboard,
-  webhookCallback,
-} from "https://deno.land/x/grammy/mod.ts";
+import { Bot, InlineKeyboard, webhookCallback } from "https://deno.land/x/grammy/mod.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { extractBookInfo } from "../_shared/gemini-client.ts";
 import { type BookMetadata, searchBook } from "../_shared/book-search.ts";
 import { validateBookInput } from "../_shared/input-validator.ts";
-import {
-  cleanupState,
-  getState,
-  saveState,
-} from "../_shared/conversational-state.ts";
+import { cleanupState, getState, saveState } from "../_shared/conversational-state.ts";
 import { createLogger, generateRequestId } from "../_shared/logger.ts";
 import {
   formatRecommendations,
@@ -57,9 +49,7 @@ bot.command("start", async (ctx) => {
       chatId: ctx.chat?.id,
     });
 
-    await ctx.reply(
-      "Welcome to Shelf Help! 📚\n\nI'm your reading companion assistant.",
-    );
+    await ctx.reply("Welcome to Shelf Help! 📚\n\nI'm your reading companion assistant.");
 
     logger.info("/start command completed successfully", {
       operation: "start_command",
@@ -136,10 +126,7 @@ bot.command("dbtest", async (ctx) => {
     });
 
     // Clean up test record
-    const { error: deleteError } = await supabase.from("books").delete().eq(
-      "id",
-      insertData.id,
-    );
+    const { error: deleteError } = await supabase.from("books").delete().eq("id", insertData.id);
 
     if (deleteError) {
       logger.error("Database cleanup failed", {
@@ -258,9 +245,7 @@ bot.command("recommend", async (ctx) => {
         isKeywordOnlySearch = true;
       } else {
         // Other errors - return error message
-        await ctx.reply(
-          "❌ Unable to process recommendation request. Please try again.",
-        );
+        await ctx.reply("❌ Unable to process recommendation request. Please try again.");
         return;
       }
     }
@@ -289,13 +274,9 @@ bot.command("recommend", async (ctx) => {
       logger.error("Search failed", {
         operation: "recommend_command",
         isKeywordOnlySearch,
-        error: searchError instanceof Error
-          ? searchError.message
-          : String(searchError),
+        error: searchError instanceof Error ? searchError.message : String(searchError),
       });
-      await ctx.reply(
-        "❌ Unable to search for recommendations. Please try again.",
-      );
+      await ctx.reply("❌ Unable to search for recommendations. Please try again.");
       return;
     }
 
@@ -340,8 +321,7 @@ bot.command("recommend", async (ctx) => {
 
     // Add disclaimer for keyword-only search
     if (isKeywordOnlySearch) {
-      message =
-        "📚 **Here are keyword-based recommendations for your mood:**\n" +
+      message = "📚 **Here are keyword-based recommendations for your mood:**\n" +
         "_Using keyword search (semantic search unavailable)_\n\n";
     }
 
@@ -383,9 +363,7 @@ bot.command("recommend", async (ctx) => {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    await ctx.reply(
-      "❌ An error occurred while searching for recommendations.",
-    );
+    await ctx.reply("❌ An error occurred while searching for recommendations.");
   }
 });
 
@@ -428,8 +406,7 @@ bot.command("queue", async (ctx) => {
     if (!books || books.length === 0) {
       logger.info("Empty queue", { operation: "queue_command" });
       await ctx.reply(
-        "📚 Your TBR queue is empty!\n\n" +
-          "Use /addbook to add books to your reading list.",
+        "📚 Your TBR queue is empty!\n\n" + "Use /addbook to add books to your reading list.",
       );
       return;
     }
@@ -585,10 +562,7 @@ async function processBookAddition(
   // Search for book across multiple sources
   const searchResult = await searchBook(title, author);
 
-  if (
-    !searchResult.success || !searchResult.books ||
-    searchResult.books.length === 0
-  ) {
+  if (!searchResult.success || !searchResult.books || searchResult.books.length === 0) {
     logger.info("Book not found", {
       chatId,
       title,
@@ -683,12 +657,7 @@ async function handleBookSelection(
   await cleanupState(supabase, chatId);
 
   // Save book to database
-  await saveBookToDatabase(
-    ctx,
-    chatId,
-    selectedBook as BookMetadata,
-    requestId,
-  );
+  await saveBookToDatabase(ctx, chatId, selectedBook as BookMetadata, requestId);
 }
 
 /**
@@ -745,8 +714,7 @@ async function saveBookToDatabase(
     });
 
     // Send confirmation with cover image if available
-    let message =
-      `✅ Added to your reading list!\n\n📚 **${book.title}**\n👤 ${book.author}`;
+    let message = `✅ Added to your reading list!\n\n📚 **${book.title}**\n👤 ${book.author}`;
     if (book.page_count) message += `\n📖 ${book.page_count} pages`;
     if (book.goodreads_id) message += `\n⭐ Goodreads ID: ${book.goodreads_id}`;
 
@@ -840,22 +808,16 @@ async function handleAddToTop(
     }
 
     // Get book title for confirmation
-    const { data: book } = await supabase.from("books").select("title").eq(
-      "id",
-      bookId,
-    ).single();
+    const { data: book } = await supabase.from("books").select("title").eq("id", bookId).single();
 
     logger.info("Book moved to top of queue", {
       operation: "add_to_top",
       bookId,
     });
 
-    await ctx.reply(
-      `✅ **${book?.title || "Book"}** moved to top of your queue!`,
-      {
-        parse_mode: "Markdown",
-      },
-    );
+    await ctx.reply(`✅ **${book?.title || "Book"}** moved to top of your queue!`, {
+      parse_mode: "Markdown",
+    });
   } catch (error) {
     logger.error("Error in add_to_top handler", {
       operation: "add_to_top",
