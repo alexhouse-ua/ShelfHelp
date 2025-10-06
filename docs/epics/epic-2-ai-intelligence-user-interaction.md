@@ -32,12 +32,17 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 **Status:** Not Started
 **Description:** Implement the AI analysis of reflection responses to generate objective ratings and update the user's preference model.
 
+### 2.5: AI-Powered Book Discovery
+
+**Status:** Not Started
+**Description:** Implement AI-powered web search to discover new books from external sources and add them to the TBR queue.
+
 ## Story Progress
 
-- **Total Stories:** 4
-- **Completed:** 0
+- **Total Stories:** 5
+- **Completed:** 2 (2.1, 2.2)
 - **In Progress:** 0
-- **Not Started:** 4
+- **Not Started:** 3 (2.3, 2.4, 2.5)
 
 ## Dependencies
 
@@ -46,8 +51,9 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 
 ## Success Criteria
 
-- [ ] TBR queue automatically prioritizes based on business logic
-- [ ] Mood-based recommendations provide relevant book suggestions
+- [x] TBR queue automatically prioritizes based on business logic
+- [x] Mood-based recommendations provide relevant book suggestions
+- [ ] AI-powered book discovery finds new books from external sources
 - [ ] Post-read reflection workflow captures detailed user feedback
 - [ ] AI generates objective ratings from reflection responses
 - [ ] User preference model updates dynamically
@@ -69,6 +75,7 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 - **2.2 (Mood Recommendations)**: Start with SQL Hybrid Search; optional LC retriever
 - **2.3 (Reflection Workflow)**: Use LangGraph for stateful conversation orchestration
 - **2.4 (Rating Analysis)**: Batch Gemini calls; optional LC structured output
+- **2.5 (Book Discovery)**: Gemini Flash for intent extraction; direct web search integration
 
 ## Notes
 
