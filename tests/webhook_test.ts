@@ -68,9 +68,8 @@ Deno.test({
       return;
     }
 
-    assertEquals(response.status, 405);
-    const result = await response.text();
-    assertEquals(result, "not allowed");
+    // grammY webhookCallback returns 401 when secret token validation fails
+    assertEquals(response.status, 401);
   },
 });
 
@@ -101,9 +100,8 @@ Deno.test({
       return;
     }
 
-    assertEquals(response.status, 405);
-    const result = await response.text();
-    assertEquals(result, "not allowed");
+    // grammY webhookCallback returns 401 when secret token validation fails
+    assertEquals(response.status, 401);
   },
 });
 

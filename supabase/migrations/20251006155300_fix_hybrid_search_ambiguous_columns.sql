@@ -1,8 +1,5 @@
--- Story 2.2: Hybrid Search Function for Mood-Based Recommendations
--- Creates a PostgreSQL function that performs hybrid search combining:
--- 1. Vector similarity search (semantic matching)
--- 2. Full-text keyword search (explicit genre/topic matching)
--- Weighted 70/30 (vector/keyword) ranking
+-- Fix ambiguous column references in hybrid_search_books function
+-- Replaces function created in 20251003145309_add_hybrid_search_function.sql
 
 CREATE OR REPLACE FUNCTION hybrid_search_books(
   query_embedding VECTOR(768),
@@ -70,6 +67,5 @@ BEGIN
 END;
 $$;
 
--- Add comment for documentation
 COMMENT ON FUNCTION hybrid_search_books IS
 'Story 2.2: Hybrid search combining vector similarity (70%) and keyword matching (30%) for mood-based book recommendations. Filters books with status=to_read.';

@@ -1007,8 +1007,10 @@ async function handleShowMore(
   }
 }
 
-// Create webhook callback handler
-const handleUpdate = webhookCallback(bot, "std/http");
+// Create webhook callback handler with secret token validation
+const handleUpdate = webhookCallback(bot, "std/http", {
+  secretToken: webhookSecret,
+});
 
 // Main request handler
 Deno.serve(async (req: Request) => {
@@ -1016,33 +1018,12 @@ Deno.serve(async (req: Request) => {
   const logger = createLogger(requestId);
 
   try {
-    // Validate webhook secret via query parameter (Supabase doesn't pass custom headers)
-    const url = new URL(req.url);
-    const receivedSecret = url.searchParams.get("secret");
-
-    logger.info("Secret validation check", {
-      operation: "webhook_validation",
-      hasReceivedSecret: !!receivedSecret,
-      hasConfiguredSecret: !!webhookSecret,
-      secretsMatch: receivedSecret === webhookSecret,
-      receivedLength: receivedSecret?.length,
-      configuredLength: webhookSecret?.length,
-    });
-
-    if (receivedSecret !== webhookSecret) {
-      logger.error("Invalid or missing webhook secret", {
-        operation: "webhook_validation",
-        hasSecret: !!receivedSecret,
-      });
-      return new Response("not allowed", { status: 405 });
-    }
-
     logger.info("Webhook request received", {
       operation: "webhook_handler",
       method: req.method,
     });
 
-    // Process the update
+    // Process the update (grammY validates secret token automatically)
     const response = await handleUpdate(req);
 
     logger.info("Webhook request processed successfully", {
