@@ -1,13 +1,18 @@
 name: Deploy to Supabase
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
     branches:
       - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Only run if CI workflow succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout code
@@ -31,11 +36,20 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy Edge Functions
+      - name: Deploy telegram-webhook (no JWT verification)
+        run: supabase functions deploy telegram-webhook --no-verify-jwt --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy other edge functions
         run: |
-          # Deploy telegram-webhook without JWT verification (uses Telegram's secret token instead)
-          supabase functions deploy telegram-webhook --no-verify-jwt --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
-          # Deploy all other functions (with default JWT verification)
-          supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" --exclude telegram-webhook
+          # Deploy all other functions individually with default JWT verification
+          for func in supabase/functions/*/; do
+            func_name=$(basename "$func")
+            if [ "$func_name" != "telegram-webhook" ] && [ "$func_name" != "_shared" ]; then
+              echo "Deploying $func_name..."
+              supabase functions deploy "$func_name" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+            fi
+          done
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
