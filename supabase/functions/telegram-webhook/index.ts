@@ -7,6 +7,12 @@ import { type BookMetadata, searchBook } from "../_shared/book-search.ts";
 import { validateBookInput } from "../_shared/input-validator.ts";
 import { cleanupState, getState, saveState } from "../_shared/conversational-state.ts";
 import { createLogger, generateRequestId } from "../_shared/logger.ts";
+import {
+  formatRecommendations,
+  generateMoodEmbedding,
+  searchByKeywordsOnly,
+  searchByMood,
+} from "../_shared/mood-recommendation.ts";
 
 // Initialize bot
 const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
@@ -187,6 +193,180 @@ bot.command("addbook", async (ctx) => {
   }
 });
 
+// /recommend command handler - Mood-based book recommendations
+bot.command("recommend", async (ctx) => {
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
+
+  try {
+    const chatId = ctx.chat?.id;
+    if (!chatId) {
+      await ctx.reply("❌ Unable to identify chat session");
+      return;
+    }
+
+    logger.info("Processing /recommend command", {
+      operation: "recommend_command",
+      chatId,
+    });
+
+    const moodText = ctx.match; // Text after /recommend
+
+    if (!moodText || moodText.trim().length === 0) {
+      await ctx.reply(
+        "Please describe your reading mood! For example:\n\n" +
+          "/recommend something light and funny\n" +
+          "/recommend dark mystery with strong female lead\n" +
+          "/recommend uplifting romance",
+      );
+      return;
+    }
+
+    await ctx.reply("🔍 Searching for books that match your mood...");
+
+    // Generate embedding for mood query
+    let embedding: number[] | null = null;
+    let isKeywordOnlySearch = false;
+
+    try {
+      embedding = await generateMoodEmbedding(moodText as string, requestId);
+    } catch (error) {
+      logger.error("Failed to generate embedding", {
+        operation: "recommend_command",
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Check if it's a timeout - use keyword fallback
+      if (error instanceof Error && error.message === "TIMEOUT") {
+        logger.info("Using keyword-only fallback due to timeout", {
+          operation: "recommend_command",
+          moodText,
+        });
+        isKeywordOnlySearch = true;
+      } else {
+        // Other errors - return error message
+        await ctx.reply("❌ Unable to process recommendation request. Please try again.");
+        return;
+      }
+    }
+
+    // Search books by mood (hybrid or keyword-only)
+    let results;
+    try {
+      if (isKeywordOnlySearch) {
+        results = await searchByKeywordsOnly(
+          supabase,
+          moodText as string,
+          requestId,
+          10, // Get more results for pagination
+        );
+      } else {
+        results = await searchByMood(
+          supabase,
+          moodText as string,
+          embedding!,
+          requestId,
+          10, // Get more results for pagination
+          0.5, // Lower threshold for broader matches
+        );
+      }
+    } catch (searchError) {
+      logger.error("Search failed", {
+        operation: "recommend_command",
+        isKeywordOnlySearch,
+        error: searchError instanceof Error ? searchError.message : String(searchError),
+      });
+      await ctx.reply("❌ Unable to search for recommendations. Please try again.");
+      return;
+    }
+
+    if (!results || results.length === 0) {
+      logger.info("No matching books found", {
+        operation: "recommend_command",
+        moodText,
+      });
+      await ctx.reply(
+        "😔 I couldn't find any books matching that mood in your TBR queue.\n\n" +
+          "Try adding more books with /addbook or try a different mood description.",
+      );
+      return;
+    }
+
+    // Store search results in conversational state for pagination
+    await saveState(
+      supabase,
+      chatId,
+      {
+        workflow: "mood_recommendation",
+        step: "viewing_results",
+        mood_text: moodText,
+        embedding: embedding,
+        all_results: results.map((r) => ({
+          book_id: r.book_id,
+          title: r.title,
+          author: r.author,
+          ai_summary: r.ai_summary,
+          combined_score: r.combined_score,
+        })),
+        current_offset: 0,
+      },
+      "mood_search",
+    );
+
+    // Format and send top 3 recommendations
+    const topResults = results.slice(0, 3);
+    const formatted = formatRecommendations(topResults);
+
+    let message = "📚 **Here are my top recommendations for your mood:**\n\n";
+
+    // Add disclaimer for keyword-only search
+    if (isKeywordOnlySearch) {
+      message = "📚 **Here are keyword-based recommendations for your mood:**\n" +
+        "_Using keyword search (semantic search unavailable)_\n\n";
+    }
+
+    formatted.forEach((rec, index) => {
+      message += `${index + 1}. **${rec.title}**\n`;
+      message += `   👤 ${rec.author}\n`;
+      message += `   📖 ${rec.summary}\n`;
+      message += `   ⭐ Relevance: ${rec.relevanceScore}%\n\n`;
+    });
+
+    // Create inline keyboard with action buttons
+    const keyboard = new InlineKeyboard();
+
+    topResults.forEach((result) => {
+      keyboard
+        .text("📌 Add to Top", `add_to_top:${result.book_id}`)
+        .text("📖 Tell Me More", `tell_more:${result.book_id}`)
+        .row();
+    });
+
+    // Add "Show More" button if there are more results
+    if (results.length > 3) {
+      keyboard.text("🔍 Show More Results", "show_more:3");
+    }
+
+    await ctx.reply(message, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+
+    logger.info("/recommend command completed successfully", {
+      operation: "recommend_command",
+      resultCount: results.length,
+      displayedCount: topResults.length,
+    });
+  } catch (error) {
+    logger.error("Error in /recommend command", {
+      operation: "recommend_command",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    await ctx.reply("❌ An error occurred while searching for recommendations.");
+  }
+});
+
 // /queue command handler - Display prioritized TBR queue
 bot.command("queue", async (ctx) => {
   const requestId = generateRequestId();
@@ -296,6 +476,24 @@ bot.on("callback_query:data", async (ctx) => {
     if (data.startsWith("select_book_")) {
       const bookIndex = parseInt(data.replace("select_book_", ""), 10);
       await handleBookSelection(ctx, chatId, bookIndex, requestId);
+    }
+
+    // Handle "Add to Top" action from recommendation
+    if (data.startsWith("add_to_top:")) {
+      const bookId = data.replace("add_to_top:", "");
+      await handleAddToTop(ctx, chatId, bookId, requestId);
+    }
+
+    // Handle "Tell Me More" action from recommendation
+    if (data.startsWith("tell_more:")) {
+      const bookId = data.replace("tell_more:", "");
+      await handleTellMeMore(ctx, chatId, bookId, requestId);
+    }
+
+    // Handle "Show More" pagination action
+    if (data.startsWith("show_more:")) {
+      const offset = parseInt(data.replace("show_more:", ""), 10);
+      await handleShowMore(ctx, chatId, offset, requestId);
     }
 
     await ctx.answerCallbackQuery();
@@ -535,6 +733,277 @@ async function saveBookToDatabase(
       stack: error.stack,
     });
     await ctx.reply("❌ An error occurred while saving the book.");
+  }
+}
+
+/**
+ * Handle "Add to Top" callback - Move book to top of queue
+ */
+async function handleAddToTop(
+  // deno-lint-ignore no-explicit-any
+  ctx: any,
+  chatId: number,
+  bookId: string,
+  requestId: string,
+): Promise<void> {
+  const logger = createLogger(requestId);
+
+  try {
+    logger.info("Processing add_to_top callback", {
+      chatId,
+      bookId,
+      operation: "add_to_top",
+    });
+
+    // Get all books with to_read status ordered by queue_position
+    const { data: allBooks, error: fetchError } = await supabase
+      .from("books")
+      .select("id, queue_position")
+      .eq("status", "to_read")
+      .order("queue_position", { ascending: true });
+
+    if (fetchError) {
+      logger.error("Failed to fetch queue for reordering", {
+        operation: "add_to_top",
+        error: fetchError.message,
+      });
+      await ctx.reply("❌ Failed to update queue. Please try again.");
+      return;
+    }
+
+    // Update all other books' positions (shift down)
+    if (allBooks && allBooks.length > 0) {
+      for (let i = 0; i < allBooks.length; i++) {
+        if (allBooks[i].id !== bookId) {
+          const { error: updateError } = await supabase
+            .from("books")
+            .update({ queue_position: i + 2 })
+            .eq("id", allBooks[i].id);
+
+          if (updateError) {
+            logger.error("Failed to update queue position", {
+              operation: "add_to_top",
+              bookId: allBooks[i].id,
+              error: updateError.message,
+            });
+          }
+        }
+      }
+    }
+
+    // Set selected book to position 1
+    const { error: updateError } = await supabase
+      .from("books")
+      .update({ queue_position: 1 })
+      .eq("id", bookId);
+
+    if (updateError) {
+      logger.error("Failed to update book position", {
+        operation: "add_to_top",
+        bookId,
+        error: updateError.message,
+      });
+      await ctx.reply("❌ Failed to update queue. Please try again.");
+      return;
+    }
+
+    // Get book title for confirmation
+    const { data: book } = await supabase.from("books").select("title").eq("id", bookId).single();
+
+    logger.info("Book moved to top of queue", {
+      operation: "add_to_top",
+      bookId,
+    });
+
+    await ctx.reply(`✅ **${book?.title || "Book"}** moved to top of your queue!`, {
+      parse_mode: "Markdown",
+    });
+  } catch (error) {
+    logger.error("Error in add_to_top handler", {
+      operation: "add_to_top",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    await ctx.reply("❌ An error occurred while updating the queue.");
+  }
+}
+
+/**
+ * Handle "Tell Me More" callback - Display full book metadata
+ */
+async function handleTellMeMore(
+  // deno-lint-ignore no-explicit-any
+  ctx: any,
+  chatId: number,
+  bookId: string,
+  requestId: string,
+): Promise<void> {
+  const logger = createLogger(requestId);
+
+  try {
+    logger.info("Processing tell_more callback", {
+      chatId,
+      bookId,
+      operation: "tell_more",
+    });
+
+    // Fetch full book metadata
+    const { data: book, error } = await supabase
+      .from("books")
+      .select(
+        "title, author, ai_summary, genres_primary, themes, tone, pacing, page_count, publication_date, goodreads_link",
+      )
+      .eq("id", bookId)
+      .single();
+
+    if (error || !book) {
+      logger.error("Failed to fetch book details", {
+        operation: "tell_more",
+        bookId,
+        error: error?.message,
+      });
+      await ctx.reply("❌ Failed to load book details. Please try again.");
+      return;
+    }
+
+    // Format detailed message
+    let message = `📖 **${book.title}**\n`;
+    message += `👤 **Author:** ${book.author}\n\n`;
+
+    if (book.ai_summary) {
+      message += `📝 **Summary:**\n${book.ai_summary}\n\n`;
+    }
+
+    if (book.genres_primary && book.genres_primary.length > 0) {
+      message += `🏷️ **Genres:** ${book.genres_primary.join(", ")}\n`;
+    }
+
+    if (book.themes && book.themes.length > 0) {
+      message += `🎭 **Themes:** ${book.themes.join(", ")}\n`;
+    }
+
+    if (book.tone) {
+      message += `🎵 **Tone:** ${book.tone}\n`;
+    }
+
+    if (book.pacing) {
+      message += `⚡ **Pacing:** ${book.pacing}\n`;
+    }
+
+    if (book.page_count) {
+      message += `📄 **Pages:** ${book.page_count}\n`;
+    }
+
+    if (book.publication_date) {
+      message += `📅 **Published:** ${book.publication_date}\n`;
+    }
+
+    if (book.goodreads_link) {
+      message += `\n🔗 [View on Goodreads](${book.goodreads_link})`;
+    }
+
+    await ctx.reply(message, { parse_mode: "Markdown" });
+
+    logger.info("Book details sent", {
+      operation: "tell_more",
+      bookId,
+    });
+  } catch (error) {
+    logger.error("Error in tell_more handler", {
+      operation: "tell_more",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    await ctx.reply("❌ An error occurred while loading book details.");
+  }
+}
+
+/**
+ * Handle "Show More" callback - Display next batch of recommendations
+ */
+async function handleShowMore(
+  // deno-lint-ignore no-explicit-any
+  ctx: any,
+  chatId: number,
+  offset: number,
+  requestId: string,
+): Promise<void> {
+  const logger = createLogger(requestId);
+
+  try {
+    logger.info("Processing show_more callback", {
+      chatId,
+      offset,
+      operation: "show_more",
+    });
+
+    // Retrieve search state
+    const state = await getState(supabase, chatId);
+
+    if (!state || state.state_data.workflow !== "mood_recommendation") {
+      logger.info("Search state expired", {
+        operation: "show_more",
+        chatId,
+      });
+      await ctx.reply(
+        "⏰ Search session expired. Please run /recommend again to get new recommendations.",
+      );
+      return;
+    }
+
+    const allResults = state.state_data.all_results;
+
+    if (!allResults || offset >= allResults.length) {
+      await ctx.reply("You've seen all available recommendations!");
+      return;
+    }
+
+    // Get next 3 results
+    const nextResults = allResults.slice(offset, offset + 3);
+    const formatted = formatRecommendations(nextResults);
+
+    let message = "📚 **More recommendations for your mood:**\n\n";
+
+    formatted.forEach((rec, index) => {
+      message += `${offset + index + 1}. **${rec.title}**\n`;
+      message += `   👤 ${rec.author}\n`;
+      message += `   📖 ${rec.summary}\n`;
+      message += `   ⭐ Relevance: ${rec.relevanceScore}%\n\n`;
+    });
+
+    // Create inline keyboard with action buttons
+    const keyboard = new InlineKeyboard();
+
+    nextResults.forEach((result) => {
+      keyboard
+        .text("📌 Add to Top", `add_to_top:${result.book_id}`)
+        .text("📖 Tell Me More", `tell_more:${result.book_id}`)
+        .row();
+    });
+
+    // Add "Show More" button if there are more results
+    const newOffset = offset + 3;
+    if (newOffset < allResults.length) {
+      keyboard.text("🔍 Show More Results", `show_more:${newOffset}`);
+    }
+
+    await ctx.reply(message, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+
+    logger.info("More results displayed", {
+      operation: "show_more",
+      offset,
+      displayedCount: nextResults.length,
+    });
+  } catch (error) {
+    logger.error("Error in show_more handler", {
+      operation: "show_more",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    await ctx.reply("❌ An error occurred while loading more results.");
   }
 }
 
