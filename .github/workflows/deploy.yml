@@ -32,6 +32,10 @@ jobs:
           fi
 
       - name: Deploy Edge Functions
-        run: supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+        run: |
+          # Deploy telegram-webhook without JWT verification (uses Telegram's secret token instead)
+          supabase functions deploy telegram-webhook --no-verify-jwt --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+          # Deploy all other functions (with default JWT verification)
+          supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" --exclude telegram-webhook
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
