@@ -197,9 +197,13 @@ Deno.serve(async (req: Request) => {
     // Generate embedding for semantic search
     logger.info("Generating embedding for book", { book_id });
     const embeddingText = `${book.title} by ${book.author}. ${
-      enrichmentData.genres_primary.join(", ")
+      enrichmentData.genres_primary.join(
+        ", ",
+      )
     }. ${
-      enrichmentData.themes.join(", ")
+      enrichmentData.themes.join(
+        ", ",
+      )
     }. ${enrichmentData.tone} tone, ${enrichmentData.pacing} paced.`;
 
     let embedding: number[] | null = null;

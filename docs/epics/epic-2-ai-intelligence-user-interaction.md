@@ -73,10 +73,10 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 
 ## Story Progress
 
-- **Total Stories:** 5
+- **Total Stories:** 6
 - **Completed:** 2 (2.1, 2.2)
 - **In Progress:** 0
-- **Not Started:** 3 (2.3, 2.4, 2.5)
+- **Not Started:** 4 (2.0, 2.3, 2.4, 2.5)
 
 ## Dependencies
 
@@ -85,6 +85,7 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 
 ## Success Criteria
 
+- [ ] CI/CD pipeline with parallel jobs (lint, unit tests, integration tests) is operational
 - [x] TBR queue automatically prioritizes based on business logic
 - [x] Mood-based recommendations provide relevant book suggestions
 - [ ] AI-powered book discovery finds new books from external sources
