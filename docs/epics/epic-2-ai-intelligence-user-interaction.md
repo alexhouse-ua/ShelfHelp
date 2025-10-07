@@ -27,8 +27,9 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 **Status:** Not Started
 **Description:** Implement the proactive, multi-step conversational workflow for post-read reflections.
 **Acceptance Criteria:**
+
 1. When a book's status changes to 'finished', the system automatically triggers the reflection workflow.
-2. The bot sends a proactive message inviting the user to reflect (e.g., "I see you finished *Book Title*! Would you like to reflect on it?").
+2. The bot sends a proactive message inviting the user to reflect (e.g., "I see you finished _Book Title_! Would you like to reflect on it?").
 3. The workflow is a stateful, multi-step conversation managed by LangGraph, guiding the user through at least 3 distinct reflection questions.
 4. User responses are saved to the `reflections` table, linked to the correct book.
 5. The conversation state is persisted in the `conversational_state` table, allowing the user to pause and resume.
@@ -41,6 +42,7 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 **Status:** Not Started
 **Description:** Implement the AI analysis of reflection responses to generate objective ratings and update the user's preference model.
 **Acceptance Criteria:**
+
 1. The workflow is triggered automatically after a user successfully completes a post-read reflection (Story 2.3).
 2. The system uses Gemini Pro to analyze the reflection text stored in the `reflections` table.
 3. The analysis generates an objective `ai_rating` (0-10) for the book, which is then saved to the `books` table.
@@ -54,6 +56,7 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 **Status:** Not Started
 **Description:** Implement AI-powered web search to discover new books from external sources and add them to the TBR queue.
 **Acceptance Criteria:**
+
 1. A `/discover` command is available that accepts a natural language query from the user.
 2. The system uses Gemini Flash to extract search intent (genres, themes, authors) from the user's query.
 3. The system performs a web search against sources defined in the `recommendation_sources` table.

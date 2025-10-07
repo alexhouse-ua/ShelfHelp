@@ -17,6 +17,7 @@ To deliver valuable insights back to the user through automated reports and to v
 **Status:** Not Started
 **Description:** Implement the automated generation and delivery of weekly and monthly summary reports.
 **Acceptance Criteria:**
+
 1. A `pg_cron` job is scheduled to trigger a new `generate-report` Edge Function on a weekly and monthly basis.
 2. The function queries the `books` and `reflections` tables to aggregate reading statistics for the given period (e.g., books finished, pages read, genre distribution).
 3. The aggregated stats are passed to Gemini Pro to generate a concise, narrative summary of the user's reading habits.
@@ -29,6 +30,7 @@ To deliver valuable insights back to the user through automated reports and to v
 **Status:** Not Started
 **Description:** Perform a full validation of all user flows and data pipelines.
 **Acceptance Criteria:**
+
 1. A comprehensive manual test plan is created in a new document (`docs/qa/manual-test-plan-v1.md`).
 2. The test plan documents step-by-step execution for all major user flows, including `/addbook`, `/recommend`, `/discover`, and the post-read reflection workflow.
 3. The test plan is executed in a production-like staging or preview environment.
@@ -41,6 +43,7 @@ To deliver valuable insights back to the user through automated reports and to v
 **Status:** Not Started
 **Description:** Complete final production environment checks and officially launch the bot.
 **Acceptance Criteria:**
+
 1. A production readiness checklist is created and completed, covering monitoring, alerting, and final secret rotation.
 2. Production monitoring dashboards are configured in Supabase to track Edge Function performance (invocations, errors, duration) and database health.
 3. The bot's `/start` and `/help` messages are updated to remove any "beta" or "development" language.

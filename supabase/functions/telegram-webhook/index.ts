@@ -518,7 +518,9 @@ async function processBookAddition(ctx, chatId, userInput, requestId): Promise<v
   books.slice(0, 5).forEach((book, index) => {
     keyboard
       .text(
-        `${book.title} by ${book.author}${book.publication_date ? ` (${book.publication_date})` : ""}`,
+        `${book.title} by ${book.author}${
+          book.publication_date ? ` (${book.publication_date})` : ""
+        }`,
         `select_book_${index}`,
       )
       .row();
@@ -588,10 +590,31 @@ async function saveBookToDatabase(ctx, chatId, book, requestId): Promise<void> {
       chatId,
       bookId: data.id,
     });
+
+    // Trigger metadata enrichment asynchronously (don't await)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    if (supabaseUrl) {
+      fetch(`${supabaseUrl}/functions/v1/enrich-metadata`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ book_id: data.id }),
+      }).catch((error) => {
+        logger.error("Failed to trigger enrichment", {
+          bookId: data.id,
+          error: error.message,
+        });
+      });
+      logger.info("Enrichment triggered for book", { bookId: data.id });
+    }
+
     // Send confirmation with cover image if available
     let message = `✅ Added to your reading list!\n\n📚 **${book.title}**\n👤 ${book.author}`;
     if (book.page_count) message += `\n📖 ${book.page_count} pages`;
     if (book.goodreads_id) message += `\n⭐ Goodreads ID: ${book.goodreads_id}`;
+    message += `\n\n🔍 _Enriching metadata in background..._`;
     if (book.cover_image_url) {
       await ctx.replyWithPhoto(book.cover_image_url, {
         caption: message,

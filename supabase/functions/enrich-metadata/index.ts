@@ -3,6 +3,7 @@ import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger, generateRequestId } from "../_shared/logger.ts";
 import { badRequest, internalError, notFound } from "../_shared/error-handler.ts";
+import { generateMoodEmbedding } from "../_shared/mood-recommendation.ts";
 
 /**
  * Book enrichment data structure
@@ -193,9 +194,25 @@ Deno.serve(async (req: Request) => {
     // Enrich metadata
     const enrichmentData = await enrichBookMetadata(book.title, book.author, geminiApiKey, logger);
 
+    // Generate embedding for semantic search
+    logger.info("Generating embedding for book", { book_id });
+    const embeddingText = `${book.title} by ${book.author}. ${enrichmentData.genres_primary.join(", ")}. ${enrichmentData.themes.join(", ")}. ${enrichmentData.tone} tone, ${enrichmentData.pacing} paced.`;
+
+    let embedding: number[] | null = null;
+    try {
+      embedding = await generateMoodEmbedding(embeddingText, requestId);
+      logger.info("Embedding generated successfully", { book_id, dimensions: embedding.length });
+    } catch (error) {
+      logger.error("Failed to generate embedding, continuing without it", {
+        book_id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Continue without embedding - book will still be enriched
+    }
+
     logger.info("Updating book with enrichment data", { book_id });
 
-    // Update book with enrichment data
+    // Update book with enrichment data and embedding
     const { error: updateError } = await supabase
       .from("books")
       .update({
@@ -209,6 +226,7 @@ Deno.serve(async (req: Request) => {
         pov_type: enrichmentData.pov_type,
         pov_gender: enrichmentData.pov_gender,
         spice_level: enrichmentData.spice_level,
+        embedding: embedding ? `[${embedding.join(",")}]` : null,
         status: "enriched",
       })
       .eq("id", book_id);
