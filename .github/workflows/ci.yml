@@ -2,44 +2,100 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
-    branches: ["**"]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
-  lint-and-test:
+  # Job 1: Fast checks for code style and formatting
+  lint-and-format:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-
+      # Cache Deno dependencies based on the lock file
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('**/deno.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deno-
       - name: Run Deno lint
         run: deno lint
-
       - name: Run Deno format check
         run: deno fmt --check --ignore=docs/,README.md
 
+  # Job 2: Fast checks for pure business logic
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # Use the same dependency cache as the lint job
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('**/deno.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deno-
+      # Run only unit tests, which are fast and have no external dependencies
+      - name: Run Unit Tests
+        run: deno test -A --ignore=**/*.integration.test.ts
+
+  # Job 3: Slower, more comprehensive tests that require a full database
+  integration-tests:
+    runs-on: ubuntu-latest # Using a standard runner
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # Use the same dependency cache
+      - name: Cache Deno dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('**/deno.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deno-
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
-
+      # Cache the Supabase Docker images to speed up 'supabase start'
+      - name: Cache Supabase Docker images
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.docker-images-supabase.tar
+          key: ${{ runner.os }}-supabase-docker-images
+      # Load cached Docker images if they exist
+      - name: Load Docker images
+        run: |
+          if [ -f /tmp/.docker-images-supabase.tar ]; then
+            docker load --input /tmp/.docker-images-supabase.tar
+          fi
       - name: Start Supabase local instance
         run: supabase start
-        env:
-          TELEGRAM_BOT_TOKEN: test-bot-token-for-ci
-          TELEGRAM_WEBHOOK_SECRET: test-webhook-secret-for-ci
-          GOOGLE_GEMINI_API_KEY: test-gemini-key-for-ci
-
-      - name: Run tests
-        run: deno test -A
+      # Save Docker images to the cache path for the next run
+      - name: Save Docker images
+        run: |
+          docker images --format '{{.Repository}}:{{.Tag}}' | grep 'supabase/' | xargs docker save --output /tmp/.docker-images-supabase.tar
+      # Run only integration tests
+      - name: Run Integration Tests
+        run: deno test -A --ignore=**/*.unit.test.ts
         env:
           SUPABASE_URL: http://127.0.0.1:54321
           SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
