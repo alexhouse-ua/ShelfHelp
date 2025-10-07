@@ -89,10 +89,6 @@ jobs:
           fi
       - name: Start Supabase local instance
         run: supabase start
-      # Save Docker images to the cache path for the next run
-      - name: Save Docker images
-        run: |
-          docker images --format '{{.Repository}}:{{.Tag}}' | grep 'supabase/' | xargs docker save --output /tmp/.docker-images-supabase.tar
       # Run only integration tests
       - name: Run Integration Tests
         run: deno test -A --ignore=**/*.unit.test.ts
@@ -102,3 +98,16 @@ jobs:
           TELEGRAM_BOT_TOKEN: test-bot-token-for-ci
           TELEGRAM_WEBHOOK_SECRET: test-webhook-secret-for-ci
           GOOGLE_GEMINI_API_KEY: test-gemini-key-for-ci
+      # Save Docker images to cache (only if tests passed and space permits)
+      - name: Save Docker images
+        if: success()
+        run: |
+          # Free up space first
+          docker system prune -af --volumes || true
+          df -h
+          # Only save if we have enough space (>3GB free in /tmp)
+          if [ $(df /tmp | tail -1 | awk '{print $4}' | sed 's/G//') -gt 3 ]; then
+            docker images --format '{{.Repository}}:{{.Tag}}' | grep 'supabase/' | xargs -r docker save --output /tmp/.docker-images-supabase.tar || true
+          else
+            echo "Insufficient space to save Docker images, skipping cache"
+          fi
