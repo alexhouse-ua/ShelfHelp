@@ -549,7 +549,7 @@ ShelfHelp automatically syncs your Goodreads "read" shelf via RSS feeds.
 
 **How it works:**
 
-- A `pg_cron` job runs daily at 2 AM UTC
+- A `pg_cron` job runs every hour (24 times daily)
 - Fetches your Goodreads RSS feed
 - Parses book metadata (title, author, rating, dates, etc.)
 - Upserts books to database (new books inserted, existing books updated)

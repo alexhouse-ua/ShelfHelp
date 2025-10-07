@@ -35,10 +35,11 @@ BEGIN
   END LOOP;
 END $$;
 
--- Schedule RSS ingestion to run daily at 2 AM UTC
+-- Schedule RSS ingestion to run every hour (24x daily)
+-- Free tier allows 2M invocations/month; 24x daily = 720/month (0.036% of limit - well within free tier)
 SELECT cron.schedule(
   'rss-ingestion-daily',              -- Job name
-  '0 2 * * *',                        -- Cron expression (2 AM UTC daily)
+  '0 * * * *',                        -- Cron expression (every hour at minute 0)
   $$
   SELECT net.http_post(
     url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/rss-ingestion',
