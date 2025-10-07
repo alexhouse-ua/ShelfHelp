@@ -1,7 +1,7 @@
 // @ts-nocheck: Supabase client generic types require dynamic runtime data
 /**
  * Integration tests for Story 1.4: Basic RSS Ingestion
- * Run: deno test --allow-net --allow-env --allow-read tests/rss_ingestion_test.ts
+ * Run: deno test --allow-net --allow-env --allow-read tests/rss_ingestion_legacy.integration.test.ts
  *
  * Note: These tests validate core RSS ingestion functionality using real RSS feed data.
  * Mock RSS feed testing is deferred to future story due to Edge Function environment

@@ -17,6 +17,7 @@ This layered approach balances speed and thoroughness: catch syntax errors and l
 **Purpose**: Unit tests validate isolated business logic without external dependencies (no database, no API calls, no network). They are fast, deterministic, and run in milliseconds.
 
 **When to use**:
+
 - Pure functions (scoring algorithms, data transformations, parsers)
 - Utility functions (date formatters, string helpers)
 - Mocked database interactions (testing error handling without real DB calls)
@@ -57,6 +58,7 @@ Deno.test("calculateBookScore - returns higher score for recent additions", () =
 **Purpose**: Integration tests validate that components work together correctly with a real local Supabase instance. They test the interaction between your code and the database, ensuring schema compliance, constraint validation, and correct data persistence.
 
 **When to use**:
+
 - Database CRUD operations (insert, update, delete, select)
 - Edge Function handlers that interact with the database
 - Testing foreign key constraints, triggers, and RLS policies
@@ -65,6 +67,7 @@ Deno.test("calculateBookScore - returns higher score for recent additions", () =
 **Naming convention**: `<feature_name>.integration.test.ts` (e.g., `book_addition.integration.test.ts`)
 
 **Requirements**:
+
 - A local Supabase instance must be running (`supabase start`)
 - Tests must clean up their data using `cleanupTestData()` to avoid test pollution
 
@@ -118,11 +121,13 @@ The CI pipeline runs three parallel jobs on every PR and push to `main`:
 3. **`integration-tests`**: Starts a local Supabase instance and runs all `*.integration.test.ts` files (slower, requires database).
 
 **Why parallel jobs?**
+
 - **Speed**: Unit tests and linting run in ~10-20 seconds, while integration tests take 2-3 minutes (Supabase startup + Docker images). Running them in parallel saves time.
 - **Fast Feedback**: If lint or unit tests fail, you know immediately without waiting for integration tests to complete.
 - **Resource Efficiency**: Integration tests use Docker and more resources, so isolating them allows better CI resource management.
 
 **Caching**:
+
 - Deno dependencies are cached based on `deno.lock` to speed up subsequent runs.
 - Supabase Docker images are cached to avoid re-downloading on every CI run, reducing integration test startup time from ~2 minutes to ~30 seconds.
 
@@ -140,6 +145,7 @@ The `_test_utils.ts` file provides standardized helper functions for setting up 
 - **`cleanupTestData(client)`**: Deletes all test data from the local Supabase instance after integration tests complete.
 
 **Why helpers?**
+
 - **Consistency**: All tests use the same data setup and teardown logic.
 - **Maintainability**: If the database schema changes, you only update the helpers once.
 - **Readability**: Tests focus on "what" they're testing, not "how" to set up data.

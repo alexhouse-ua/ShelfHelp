@@ -6,7 +6,7 @@
  *
  * To run:
  * 1. Start Supabase locally: supabase start
- * 2. Run: deno test -A tests/seed_lookup_data_test.ts
+ * 2. Run: deno test -A tests/seed_lookup_data.integration.test.ts
  *
  * These tests are OPTIONAL and skipped in CI.
  */
