@@ -12,6 +12,11 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 
 ## Stories
 
+### 2.0: Implement CI/CD Confidence Net
+
+**Status:** Approved
+**Description:** Establish a fast, reliable CI/CD pipeline with automated testing guardrails to support Epic 2 AI feature development. This foundational story ensures all AI features (2.1-2.5) can be developed with confidence through automated lint, unit tests, and integration tests running in parallel on GitHub Actions.
+
 ### 2.1: TBR Queue Prioritization
 
 **Status:** Not Started
