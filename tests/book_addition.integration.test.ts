@@ -1,7 +1,7 @@
 // @ts-nocheck: Supabase client generic types require dynamic runtime data
 /**
  * Integration tests for Story 1.2: Conversational Book Addition
- * Run: deno test --allow-net --allow-env --allow-read tests/book_addition_test.ts
+ * Run: deno test --allow-net --allow-env --allow-read tests/book_addition.integration.test.ts
  */
 
 import { assertEquals, assertExists } from "jsr:@std/assert@1";

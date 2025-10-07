@@ -8,7 +8,7 @@
  * To run:
  * 1. Start Supabase locally: supabase start
  * 2. Set GOOGLE_GEMINI_API_KEY in supabase/.env.local
- * 3. Run: deno test -A tests/enrich_metadata_test.ts
+ * 3. Run: deno test -A tests/enrich_metadata.integration.test.ts
  *
  * These tests are OPTIONAL and skipped in CI.
  */
