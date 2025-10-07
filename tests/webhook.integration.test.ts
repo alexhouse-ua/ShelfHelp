@@ -134,7 +134,7 @@ Deno.test({
 //       Related to Story 1.5 migration changing status field values
 Deno.test({
   name: "Database: Should support basic CRUD operations",
-  ignore: Deno.env.get("CI") === "true",
+  ignore: Deno.env.get("CI") === "true" || !Deno.env.get("SUPABASE_URL") || !Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
   sanitizeResources: false,
   sanitizeOps: false,
   async fn(): Promise<void> {
