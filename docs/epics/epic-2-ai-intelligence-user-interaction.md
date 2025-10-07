@@ -26,16 +26,42 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 
 **Status:** Not Started
 **Description:** Implement the proactive, multi-step conversational workflow for post-read reflections.
+**Acceptance Criteria:**
+1. When a book's status changes to 'finished', the system automatically triggers the reflection workflow.
+2. The bot sends a proactive message inviting the user to reflect (e.g., "I see you finished *Book Title*! Would you like to reflect on it?").
+3. The workflow is a stateful, multi-step conversation managed by LangGraph, guiding the user through at least 3 distinct reflection questions.
+4. User responses are saved to the `reflections` table, linked to the correct book.
+5. The conversation state is persisted in the `conversational_state` table, allowing the user to pause and resume.
+6. Upon completion, the bot sends a confirmation message summarizing the captured reflections.
+7. The workflow must be covered by an automated integration test that passes in the CI pipeline.
+8. The LangGraph state machine must include error handling for invalid user inputs or unexpected state transitions.
 
 ### 2.4: AI Ratings & Preference Updates
 
 **Status:** Not Started
 **Description:** Implement the AI analysis of reflection responses to generate objective ratings and update the user's preference model.
+**Acceptance Criteria:**
+1. The workflow is triggered automatically after a user successfully completes a post-read reflection (Story 2.3).
+2. The system uses Gemini Pro to analyze the reflection text stored in the `reflections` table.
+3. The analysis generates an objective `ai_rating` (0-10) for the book, which is then saved to the `books` table.
+4. The system updates the `user_preferences` table based on the analysis to refine the user's taste profile (e.g., adjusting scores for specific genres, authors, or tropes).
+5. All database updates are performed within a single transaction to ensure data consistency.
+6. The entire analysis and update process is covered by an integration test, mocking the Gemini API call but verifying the database operations.
+7. The system gracefully handles potential errors during AI analysis or database updates, logging them via the centralized logger.
 
 ### 2.5: AI-Powered Book Discovery
 
 **Status:** Not Started
 **Description:** Implement AI-powered web search to discover new books from external sources and add them to the TBR queue.
+**Acceptance Criteria:**
+1. A `/discover` command is available that accepts a natural language query from the user.
+2. The system uses Gemini Flash to extract search intent (genres, themes, authors) from the user's query.
+3. The system performs a web search against sources defined in the `recommendation_sources` table.
+4. The top 5-10 relevant results are parsed, ranked, and presented to the user with an inline keyboard.
+5. An "Add to TBR" button for a search result triggers the existing data enrichment and book-saving workflow (from Story 1.5 and 1.2).
+6. The system detects if a discovered book already exists in the database to prevent duplicates.
+7. The end-to-end `/discover` flow is covered by an integration test, mocking the external web search calls.
+8. The system includes robust error handling for failed web searches and API rate limiting.
 
 ## Story Progress
 

@@ -15,6 +15,7 @@ Not Started
 ## Background
 
 This story distinguishes from Story 2.2 (Mood-Based Recommendation):
+
 - **Story 2.2 (/recommend)**: Searches existing TBR queue for books already in the database
 - **Story 2.5 (/discover)**: Searches external sources for NEW books not yet in the database
 
@@ -66,6 +67,7 @@ The `/discover` command will be the primary method for users to find and add new
 ### Recommendation Sources Integration
 
 Leverage existing `recommendation_sources` table structure:
+
 ```yaml
 - name: "The StoryGraph"
   url: "https://app.thestorygraph.com"

@@ -518,9 +518,7 @@ async function processBookAddition(ctx, chatId, userInput, requestId): Promise<v
   books.slice(0, 5).forEach((book, index) => {
     keyboard
       .text(
-        `${book.title} by ${book.author}${
-          book.publication_date ? ` (${book.publication_date})` : ""
-        }`,
+        `${book.title} by ${book.author}${book.publication_date ? ` (${book.publication_date})` : ""}`,
         `select_book_${index}`,
       )
       .row();
@@ -572,7 +570,7 @@ async function saveBookToDatabase(ctx, chatId, book, requestId): Promise<void> {
         goodreads_link: book.goodreads_link,
         publisher: book.publisher,
         publication_date: book.publication_date,
-        status: "pending",
+        status: "to_read",
         user_date_added: new Date().toISOString(),
         ingestion_source: "bot",
       })
