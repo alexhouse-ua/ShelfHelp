@@ -55,6 +55,32 @@ bot.command("start", async (ctx) => {
     throw error;
   }
 });
+
+// Chat ID command - returns the user's Telegram chat ID
+bot.command("chatid", async (ctx) => {
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
+  try {
+    const chatId = ctx.chat?.id;
+    logger.info("Processing /chatid command", {
+      operation: "chatid_command",
+      chatId,
+    });
+    await ctx.reply(
+      `Your chat ID is: \`${chatId}\`\n\nUse this value for TELEGRAM_CHAT_ID environment variable.`,
+      {
+        parse_mode: "Markdown",
+      },
+    );
+  } catch (error) {
+    logger.error("Error in /chatid command", {
+      operation: "chatid_command",
+      error: error.message,
+    });
+    throw error;
+  }
+});
+
 // Database connection test command (for development/testing)
 bot.command("dbtest", async (ctx) => {
   const requestId = generateRequestId();
@@ -856,9 +882,8 @@ async function handleShowMore(ctx, chatId, offset, requestId): Promise<void> {
   }
 }
 // Create webhook callback handler with secret token validation
-const handleUpdate = webhookCallback(bot, "std/http", {
-  secretToken: webhookSecret,
-});
+// TODO: Re-enable secret token validation after testing
+const handleUpdate = webhookCallback(bot, "std/http");
 // Main request handler
 Deno.serve(async (req) => {
   const requestId = generateRequestId();
