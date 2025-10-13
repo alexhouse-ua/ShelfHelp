@@ -18,7 +18,9 @@
     "npm:@langchain/google-genai@0.1": "0.1.12_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_openai@4.104.0__zod@3.25.76__ws@8.18.3",
     "npm:@langchain/google-genai@~0.1.12": "0.1.12_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_openai@4.104.0__zod@3.25.76__ws@8.18.3",
     "npm:@langchain/langgraph-checkpoint-postgres@*": "0.1.2_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_@langchain+langgraph-checkpoint@0.1.1__@langchain+core@0.3.78___openai@4.104.0____zod@3.25.76___zod@3.25.76__openai@4.104.0___zod@3.25.76___ws@8.18.3_openai@4.104.0__zod@3.25.76__ws@8.18.3",
+    "npm:@langchain/langgraph-checkpoint-postgres@0.0.5": "0.0.5_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_@langchain+langgraph-checkpoint@0.0.18__@langchain+core@0.3.78___openai@4.104.0____zod@3.25.76___zod@3.25.76__openai@4.104.0___zod@3.25.76___ws@8.18.3_openai@4.104.0__zod@3.25.76__ws@8.18.3",
     "npm:@langchain/langgraph-checkpoint@*": "0.1.1_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_openai@4.104.0__zod@3.25.76__ws@8.18.3",
+    "npm:@langchain/langgraph-checkpoint@0.0.18": "0.0.18_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_openai@4.104.0__zod@3.25.76__ws@8.18.3",
     "npm:@langchain/langgraph@0.2": "0.2.74_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_openai@4.104.0__zod@3.25.76__ws@8.18.3",
     "npm:@langchain/langgraph@~0.2.74": "0.2.74_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_openai@4.104.0__zod@3.25.76__ws@8.18.3",
     "npm:@langchain/openai@~0.6.14": "0.6.14_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_zod@3.25.76_openai@4.104.0__zod@3.25.76__ws@8.18.3",
@@ -233,6 +235,14 @@
         "@google/generative-ai",
         "@langchain/core",
         "zod-to-json-schema"
+      ]
+    },
+    "@langchain/langgraph-checkpoint-postgres@0.0.5_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_@langchain+langgraph-checkpoint@0.0.18__@langchain+core@0.3.78___openai@4.104.0____zod@3.25.76___zod@3.25.76__openai@4.104.0___zod@3.25.76___ws@8.18.3_openai@4.104.0__zod@3.25.76__ws@8.18.3": {
+      "integrity": "sha512-e98JdEybEVl9ZiL4BckMz6TlStRnXtmFjoDZWVs+EKuQjqk+6r/Kn1S08D1+NLslXbLPPKX/mk+rRS/eHE3Bdw==",
+      "dependencies": [
+        "@langchain/core",
+        "@langchain/langgraph-checkpoint@0.0.18_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_openai@4.104.0__zod@3.25.76__ws@8.18.3",
+        "pg"
       ]
     },
     "@langchain/langgraph-checkpoint-postgres@0.1.2_@langchain+core@0.3.78__openai@4.104.0___zod@3.25.76__zod@3.25.76_@langchain+langgraph-checkpoint@0.1.1__@langchain+core@0.3.78___openai@4.104.0____zod@3.25.76___zod@3.25.76__openai@4.104.0___zod@3.25.76___ws@8.18.3_openai@4.104.0__zod@3.25.76__ws@8.18.3": {

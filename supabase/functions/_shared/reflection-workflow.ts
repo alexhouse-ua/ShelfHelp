@@ -7,8 +7,8 @@
  */
 
 import { Annotation, END, START, StateGraph } from "npm:@langchain/langgraph@0.2";
-import { BaseCheckpointSaver } from "npm:@langchain/langgraph-checkpoint@*";
-import { PostgresSaver } from "npm:@langchain/langgraph-checkpoint-postgres@*";
+import { BaseCheckpointSaver } from "npm:@langchain/langgraph-checkpoint@0.0.18";
+import { PostgresSaver } from "npm:@langchain/langgraph-checkpoint-postgres@0.0.5";
 import { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { Logger } from "./logger.ts";
 import { Bot } from "https://deno.land/x/grammy@v1.38.2/mod.ts";
