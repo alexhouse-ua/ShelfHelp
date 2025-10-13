@@ -356,6 +356,18 @@ async function errorNode(
 }
 
 /**
+ * Conditional edge from START: Determine if this is initial start or resume
+ */
+function routeStart(state: ReflectionStateType): string {
+  // If no responses yet, this is initial start
+  if (!state.responses || Object.keys(state.responses).length === 0) {
+    return "start";
+  }
+  // If responses exist, resume from process_response
+  return "process_response";
+}
+
+/**
  * Conditional edge: Determine next node based on state
  */
 function routeReflection(state: ReflectionStateType): string {
@@ -398,14 +410,14 @@ export function createReflectionWorkflow(
     .addNode("process_response", (state) => processResponseNode(state, config))
     .addNode("finalize", (state) => finalizeNode(state, config))
     .addNode("handle_error", (state) => errorNode(state, config))
-    .addEdge(START, "start")
-    .addEdge("start", "process_response")
+    .addConditionalEdges(START, routeStart, ["start", "process_response"])
+    .addEdge("start", END)
     .addConditionalEdges("process_response", routeReflection, [
       "ask_question",
       "finalize",
       "handle_error",
     ])
-    .addEdge("ask_question", "process_response")
+    .addEdge("ask_question", END)
     .addEdge("finalize", END)
     .addEdge("handle_error", END);
 
