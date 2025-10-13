@@ -263,8 +263,8 @@ async function finalizeNode(
     // Save to reflections table
     const { error: insertError } = await supabase.from("reflections").insert({
       book_id: state.book_id,
-      user_reflection: userReflection,
-      ai_analysis: null, // Populated by Story 2.4
+      content: userReflection,
+      reflection_type: 'analysis',
     });
 
     if (insertError) {
