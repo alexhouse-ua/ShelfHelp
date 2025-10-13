@@ -400,7 +400,11 @@ export function createReflectionWorkflow(
     .addNode("handle_error", (state) => errorNode(state, config))
     .addEdge(START, "start")
     .addEdge("start", "process_response")
-    .addConditionalEdges("process_response", routeReflection, ["ask_question", "finalize", "handle_error"])
+    .addConditionalEdges("process_response", routeReflection, [
+      "ask_question",
+      "finalize",
+      "handle_error",
+    ])
     .addEdge("ask_question", "process_response")
     .addEdge("finalize", END)
     .addEdge("handle_error", END);
