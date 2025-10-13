@@ -264,7 +264,7 @@ async function finalizeNode(
     const { error: insertError } = await supabase.from("reflections").insert({
       book_id: state.book_id,
       content: userReflection,
-      reflection_type: 'analysis',
+      reflection_type: "analysis",
     });
 
     if (insertError) {
