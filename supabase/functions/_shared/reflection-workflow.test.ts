@@ -103,4 +103,3 @@ Deno.test("ReflectionState should have required fields", () => {
   assertExists(stateSpec.completed);
   assertExists(stateSpec.error);
 });
-

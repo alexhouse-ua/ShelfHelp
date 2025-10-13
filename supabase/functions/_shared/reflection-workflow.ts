@@ -7,11 +7,11 @@
  */
 
 import { Annotation, END, START, StateGraph } from "npm:@langchain/langgraph@0.2";
-import { BaseCheckpointSaver } from "npm:@langchain/langgraph-checkpoint";
-import { PostgresSaver } from "npm:@langchain/langgraph-checkpoint-postgres";
+import { BaseCheckpointSaver } from "npm:@langchain/langgraph-checkpoint@*";
+import { PostgresSaver } from "npm:@langchain/langgraph-checkpoint-postgres@*";
 import { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { Logger } from "./logger.ts";
-import { Bot } from "https://deno.land/x/grammy/mod.ts";
+import { Bot } from "https://deno.land/x/grammy@v1.38.2/mod.ts";
 
 /**
  * Reflection questions (3 questions minimum per AC)
