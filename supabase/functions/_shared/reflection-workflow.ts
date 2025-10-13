@@ -361,7 +361,7 @@ async function errorNode(
 function routeReflection(state: ReflectionStateType): string {
   // Check for errors
   if (state.error && state.retry_count === 0) {
-    return "error";
+    return "handle_error";
   }
 
   // Check if all questions answered
@@ -397,13 +397,17 @@ export function createReflectionWorkflow(
     .addNode("ask_question", (state) => askQuestionNode(state, config))
     .addNode("process_response", (state) => processResponseNode(state, config))
     .addNode("finalize", (state) => finalizeNode(state, config))
-    .addNode("error", (state) => errorNode(state, config))
+    .addNode("handle_error", (state) => errorNode(state, config))
     .addEdge(START, "start")
     .addEdge("start", "process_response")
-    .addConditionalEdges("process_response", routeReflection, ["ask_question", "finalize", "error"])
+    .addConditionalEdges("process_response", routeReflection, [
+      "ask_question",
+      "finalize",
+      "handle_error",
+    ])
     .addEdge("ask_question", "process_response")
     .addEdge("finalize", END)
-    .addEdge("error", END);
+    .addEdge("handle_error", END);
 
   return workflow.compile({ checkpointer });
 }
