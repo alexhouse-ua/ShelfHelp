@@ -1144,7 +1144,6 @@ async function handleReflectionResponse(ctx, chatId, text, requestId): Promise<v
     }
 
     const bookId = state.state_data.reflection_book_id;
-    const currentQuestion = state.state_data.reflection_current_question || 1;
 
     // Validate input
     const validation = validateReflectionInput(text);
@@ -1188,6 +1187,9 @@ async function handleReflectionResponse(ctx, chatId, text, requestId): Promise<v
       await ctx.reply("❌ Reflection session expired. Please start again with /reflect.");
       return;
     }
+
+    // Get current question from LangGraph checkpoint (source of truth)
+    const currentQuestion = currentState.values.current_question;
 
     // Update state with user response
     const updatedResponses = {
