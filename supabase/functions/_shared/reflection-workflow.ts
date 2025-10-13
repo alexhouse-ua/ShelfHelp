@@ -7,7 +7,8 @@
  */
 
 import { Annotation, END, START, StateGraph } from "npm:@langchain/langgraph@0.2";
-import { PostgresSaver } from "npm:@langchain/langgraph-checkpoint-postgres@0.0.11";
+import { BaseCheckpointSaver } from "npm:@langchain/langgraph-checkpoint";
+import { PostgresSaver } from "npm:@langchain/langgraph-checkpoint-postgres";
 import { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { Logger } from "./logger.ts";
 import { Bot } from "https://deno.land/x/grammy/mod.ts";
@@ -44,15 +45,9 @@ export const ReflectionState = Annotation.Root({
     reducer: (_, b) => b, // Replace with new value
     default: () => ({}),
   }),
-  retry_count: Annotation<number>({
-    default: () => 0,
-  }),
-  completed: Annotation<boolean>({
-    default: () => false,
-  }),
-  error: Annotation<string | undefined>({
-    default: () => undefined,
-  }),
+  retry_count: Annotation<number>,
+  completed: Annotation<boolean>,
+  error: Annotation<string | undefined>,
 });
 
 export type ReflectionStateType = typeof ReflectionState.State;
@@ -110,7 +105,7 @@ async function startNode(
   } catch (error) {
     logger.error("Error in start node", {
       operation: "reflection_start",
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return {
       error: "Failed to start reflection workflow",
@@ -149,7 +144,7 @@ async function askQuestionNode(
   } catch (error) {
     logger.error("Error in ask question node", {
       operation: "ask_question",
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return {
       error: "Failed to ask question",
@@ -232,7 +227,7 @@ async function processResponseNode(
   } catch (error) {
     logger.error("Error in process response node", {
       operation: "process_response",
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return {
       error: "Failed to process response",
@@ -317,7 +312,7 @@ async function finalizeNode(
   } catch (error) {
     logger.error("Error in finalize node", {
       operation: "finalize_reflection",
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return {
       error: "Failed to finalize reflection",
@@ -354,7 +349,7 @@ async function errorNode(
   } catch (error) {
     logger.error("Error in error node", {
       operation: "reflection_error",
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return {};
   }
@@ -380,10 +375,11 @@ function routeReflection(state: ReflectionStateType): string {
 
 /**
  * Initialize PostgreSQL checkpointer
+ * Returns BaseCheckpointSaver to match StateGraph.compile() type signature
  */
 export async function createReflectionCheckpointer(
   connectionString: string,
-): Promise<PostgresSaver> {
+): Promise<BaseCheckpointSaver> {
   const checkpointer = PostgresSaver.fromConnString(connectionString);
   await checkpointer.setup(); // Required first-time setup
   return checkpointer;
@@ -393,7 +389,7 @@ export async function createReflectionCheckpointer(
  * Create reflection workflow graph
  */
 export function createReflectionWorkflow(
-  checkpointer: PostgresSaver,
+  checkpointer: BaseCheckpointSaver | undefined,
   config: { supabase: SupabaseClient; bot: Bot; logger: Logger },
 ): ReturnType<typeof StateGraph.prototype.compile> {
   const workflow = new StateGraph(ReflectionState)
