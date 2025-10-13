@@ -1049,8 +1049,8 @@ async function handleStartReflection(ctx, chatId, bookId, requestId): Promise<vo
       error: undefined,
     };
 
-    // Configure workflow with thread_id (use chat_id)
-    const config = { configurable: { thread_id: chatId.toString() } };
+    // Configure workflow with thread_id (use chat_id + book_id for unique thread per book)
+    const config = { configurable: { thread_id: `${chatId}-${book.id}` } };
 
     logger.info("Starting LangGraph reflection workflow", {
       operation: "start_reflection",
@@ -1175,8 +1175,8 @@ async function handleReflectionResponse(ctx, chatId, text, requestId): Promise<v
       logger,
     });
 
-    // Get current workflow state
-    const config = { configurable: { thread_id: chatId.toString() } };
+    // Get current workflow state (use chat_id + book_id for unique thread per book)
+    const config = { configurable: { thread_id: `${chatId}-${bookId}` } };
     const currentState = await workflow.getState(config);
 
     if (!currentState || !currentState.values) {
