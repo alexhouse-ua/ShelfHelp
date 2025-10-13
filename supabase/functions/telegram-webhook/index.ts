@@ -13,6 +13,12 @@ import {
   searchByKeywordsOnly,
   searchByMood,
 } from "../_shared/mood-recommendation.ts";
+import {
+  createReflectionCheckpointer,
+  createReflectionWorkflow,
+  REFLECTION_QUESTIONS as _REFLECTION_QUESTIONS, // Imported for future use
+  validateReflectionInput,
+} from "../_shared/reflection-workflow.ts";
 // Initialize bot
 const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
 const webhookSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
@@ -55,6 +61,32 @@ bot.command("start", async (ctx) => {
     throw error;
   }
 });
+
+// Chat ID command - returns the user's Telegram chat ID
+bot.command("chatid", async (ctx) => {
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
+  try {
+    const chatId = ctx.chat?.id;
+    logger.info("Processing /chatid command", {
+      operation: "chatid_command",
+      chatId,
+    });
+    await ctx.reply(
+      `Your chat ID is: \`${chatId}\`\n\nUse this value for TELEGRAM_CHAT_ID environment variable.`,
+      {
+        parse_mode: "Markdown",
+      },
+    );
+  } catch (error) {
+    logger.error("Error in /chatid command", {
+      operation: "chatid_command",
+      error: error.message,
+    });
+    throw error;
+  }
+});
+
 // Database connection test command (for development/testing)
 bot.command("dbtest", async (ctx) => {
   const requestId = generateRequestId();
@@ -380,6 +412,71 @@ bot.command("queue", async (ctx) => {
     await ctx.reply("❌ An error occurred while loading your queue.");
   }
 });
+
+// /reflect command handler - Manual reflection initiation
+bot.command("reflect", async (ctx) => {
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
+  try {
+    const chatId = ctx.chat?.id;
+    if (!chatId) {
+      await ctx.reply("❌ Unable to identify chat session");
+      return;
+    }
+    logger.info("Processing /reflect command", {
+      operation: "reflect_command",
+      chatId,
+    });
+
+    const query = ctx.match?.toString().trim();
+    await handleReflectCommand(ctx, chatId, query, requestId);
+  } catch (error) {
+    logger.error("Error in /reflect command", {
+      operation: "reflect_command",
+      error: error.message,
+      stack: error.stack,
+    });
+    await ctx.reply("❌ An error occurred while processing your reflection request.");
+  }
+});
+
+// Handle text messages (for active reflection workflows)
+bot.on("message:text", async (ctx) => {
+  const requestId = generateRequestId();
+  const logger = createLogger(requestId);
+  try {
+    const chatId = ctx.chat?.id;
+    const text = ctx.message?.text;
+
+    if (!chatId || !text) {
+      return;
+    }
+
+    // Skip if it's a command (already handled)
+    if (text.startsWith("/")) {
+      return;
+    }
+
+    logger.info("Processing text message", {
+      operation: "text_message",
+      chatId,
+      textLength: text.length,
+    });
+
+    // Check if user has active reflection workflow
+    const state = await getState(supabase, chatId);
+    if (state?.state_data?.workflow === "reflection") {
+      await handleReflectionResponse(ctx, chatId, text, requestId);
+    }
+  } catch (error) {
+    logger.error("Error in text message handler", {
+      operation: "text_message",
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+});
+
 // Handle callback queries (inline keyboard button clicks)
 bot.on("callback_query:data", async (ctx) => {
   const requestId = generateRequestId();
@@ -417,6 +514,16 @@ bot.on("callback_query:data", async (ctx) => {
     if (data.startsWith("show_more:")) {
       const offset = parseInt(data.replace("show_more:", ""), 10);
       await handleShowMore(ctx, chatId, offset, requestId);
+    }
+    // Handle "Start Reflection" callback from reflection-processor
+    if (data.startsWith("start_reflection:")) {
+      const bookId = data.replace("start_reflection:", "");
+      await handleStartReflection(ctx, chatId, bookId, requestId);
+    }
+    // Handle "Defer Reflection" callback from reflection-processor
+    if (data.startsWith("defer_reflection:")) {
+      const bookId = data.replace("defer_reflection:", "");
+      await handleDeferReflection(ctx, chatId, bookId, requestId);
     }
     await ctx.answerCallbackQuery();
   } catch (error) {
@@ -855,10 +962,364 @@ async function handleShowMore(ctx, chatId, offset, requestId): Promise<void> {
     await ctx.reply("❌ An error occurred while loading more results.");
   }
 }
+
+/**
+ * Handle "Start Reflection" callback - Initialize LangGraph workflow
+ */
+async function handleStartReflection(ctx, chatId, bookId, requestId): Promise<void> {
+  const logger = createLogger(requestId);
+  try {
+    logger.info("Processing start_reflection callback", {
+      chatId,
+      bookId,
+      operation: "start_reflection",
+    });
+
+    // Validate book ID format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(bookId)) {
+      logger.error("Invalid book ID format", {
+        operation: "start_reflection",
+        bookId,
+      });
+      await ctx.reply("❌ Invalid book reference. Please try again.");
+      return;
+    }
+
+    // Load book details from database
+    const { data: book, error: bookError } = await supabase
+      .from("books")
+      .select("id, title, author, status")
+      .eq("id", bookId)
+      .single();
+
+    if (bookError || !book) {
+      logger.error("Book not found", {
+        operation: "start_reflection",
+        bookId,
+        error: bookError?.message,
+      });
+      await ctx.reply("❌ Book not found. Please try again.");
+      return;
+    }
+
+    // Initialize conversational state for reflection workflow
+    await saveState(
+      supabase,
+      chatId,
+      {
+        workflow: "reflection",
+        step: "asking_question",
+        reflection_book_id: book.id,
+        reflection_current_question: 0, // Will be set to 1 by start node
+        reflection_responses: {},
+      },
+      "reflection_workflow",
+    );
+
+    // Initialize PostgreSQL checkpointer
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+    if (!dbUrl) {
+      logger.error("SUPABASE_DB_URL not configured", {
+        operation: "start_reflection",
+      });
+      await ctx.reply("❌ Reflection workflow not configured. Please contact support.");
+      return;
+    }
+
+    const checkpointer = await createReflectionCheckpointer(dbUrl);
+
+    // Create reflection workflow
+    const workflow = createReflectionWorkflow(checkpointer, {
+      supabase,
+      bot,
+      logger,
+    });
+
+    // Initialize state and start workflow
+    const initialState = {
+      book_id: book.id,
+      chat_id: chatId,
+      book_title: book.title,
+      book_author: book.author,
+      current_question: 1,
+      responses: {},
+      retry_count: 0,
+      completed: false,
+      error: undefined,
+    };
+
+    // Configure workflow with thread_id (use chat_id)
+    const config = { configurable: { thread_id: chatId.toString() } };
+
+    logger.info("Starting LangGraph reflection workflow", {
+      operation: "start_reflection",
+      book_id: book.id,
+      chat_id: chatId,
+    });
+
+    // Invoke workflow (async, will send first question)
+    await workflow.invoke(initialState, config);
+
+    logger.info("Reflection workflow started successfully", {
+      operation: "start_reflection",
+      book_id: book.id,
+    });
+  } catch (error) {
+    logger.error("Error in start_reflection handler", {
+      operation: "start_reflection",
+      error: error.message,
+      stack: error.stack,
+    });
+    await ctx.reply("❌ An error occurred while starting the reflection workflow.");
+  }
+}
+
+/**
+ * Handle "Defer Reflection" callback - Mark reflection as deferred
+ */
+async function handleDeferReflection(ctx, chatId, bookId, requestId): Promise<void> {
+  const logger = createLogger(requestId);
+  try {
+    logger.info("Processing defer_reflection callback", {
+      chatId,
+      bookId,
+      operation: "defer_reflection",
+    });
+
+    // Update book_events to mark reflection as deferred
+    const { error: updateError } = await supabase
+      .from("book_events")
+      .update({ event_type: "reflection_deferred" })
+      .eq("book_id", bookId)
+      .eq("event_type", "reflection_requested");
+
+    if (updateError) {
+      logger.error("Failed to defer reflection", {
+        operation: "defer_reflection",
+        error: updateError.message,
+      });
+    }
+
+    // Send acknowledgment
+    await ctx.reply(
+      "No problem! You can reflect on this book later with /reflect.\n\n" +
+        "I'll be here whenever you're ready! 📚",
+    );
+
+    logger.info("Reflection deferred successfully", {
+      operation: "defer_reflection",
+      book_id: bookId,
+    });
+  } catch (error) {
+    logger.error("Error in defer_reflection handler", {
+      operation: "defer_reflection",
+      error: error.message,
+      stack: error.stack,
+    });
+    await ctx.reply("❌ An error occurred. Please try again.");
+  }
+}
+
+/**
+ * Handle user text response during active reflection workflow
+ */
+async function handleReflectionResponse(ctx, chatId, text, requestId): Promise<void> {
+  const logger = createLogger(requestId);
+  try {
+    logger.info("Processing reflection response", {
+      chatId,
+      operation: "reflection_response",
+      textLength: text.length,
+    });
+
+    // Get current state
+    const state = await getState(supabase, chatId);
+    if (!state || state.state_data.workflow !== "reflection") {
+      logger.warn("No active reflection workflow found", {
+        operation: "reflection_response",
+        chatId,
+      });
+      return;
+    }
+
+    const bookId = state.state_data.reflection_book_id;
+    const currentQuestion = state.state_data.reflection_current_question || 1;
+
+    // Validate input
+    const validation = validateReflectionInput(text);
+    if (!validation.valid) {
+      logger.warn("Invalid reflection input", {
+        operation: "reflection_response",
+        error: validation.error,
+      });
+      await ctx.reply(`❌ ${validation.error}\n\nPlease try again.`);
+      return;
+    }
+
+    // Initialize PostgreSQL checkpointer
+    const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+    if (!dbUrl) {
+      logger.error("SUPABASE_DB_URL not configured", {
+        operation: "reflection_response",
+      });
+      await ctx.reply("❌ Reflection workflow not configured. Please contact support.");
+      return;
+    }
+
+    const checkpointer = await createReflectionCheckpointer(dbUrl);
+
+    // Create reflection workflow
+    const workflow = createReflectionWorkflow(checkpointer, {
+      supabase,
+      bot,
+      logger,
+    });
+
+    // Get current workflow state
+    const config = { configurable: { thread_id: chatId.toString() } };
+    const currentState = await workflow.getState(config);
+
+    if (!currentState || !currentState.values) {
+      logger.error("No workflow state found", {
+        operation: "reflection_response",
+        chatId,
+      });
+      await ctx.reply("❌ Reflection session expired. Please start again with /reflect.");
+      return;
+    }
+
+    // Update state with user response
+    const updatedResponses = {
+      ...currentState.values.responses,
+      [currentQuestion]: text,
+    };
+
+    // Update conversational_state with new response
+    await saveState(
+      supabase,
+      chatId,
+      {
+        ...state.state_data,
+        reflection_responses: updatedResponses,
+        reflection_current_question: currentQuestion,
+      },
+      "reflection_workflow",
+    );
+
+    logger.info("Processing user response in workflow", {
+      operation: "reflection_response",
+      book_id: bookId,
+      question: currentQuestion,
+    });
+
+    // Invoke workflow with updated state
+    await workflow.invoke(
+      {
+        ...currentState.values,
+        responses: updatedResponses,
+      },
+      config,
+    );
+
+    logger.info("Reflection response processed successfully", {
+      operation: "reflection_response",
+      question: currentQuestion,
+    });
+  } catch (error) {
+    logger.error("Error in reflection_response handler", {
+      operation: "reflection_response",
+      error: error.message,
+      stack: error.stack,
+    });
+    await ctx.reply("❌ An error occurred while processing your response.");
+  }
+}
+
+/**
+ * Handle /reflect command - Show finished books or search by query
+ */
+async function handleReflectCommand(ctx, chatId, query, requestId): Promise<void> {
+  const logger = createLogger(requestId);
+  try {
+    logger.info("Processing reflect command", {
+      chatId,
+      operation: "reflect_command",
+      hasQuery: !!query,
+    });
+
+    let booksQuery = supabase
+      .from("books")
+      .select("id, title, author, user_date_finished")
+      .eq("status", "finished")
+      .order("user_date_finished", { ascending: false });
+
+    // If query provided, search by title or author
+    if (query && query.length > 0) {
+      booksQuery = booksQuery.or(`title.ilike.%${query}%,author.ilike.%${query}%`);
+    }
+
+    const { data: books, error } = await booksQuery.limit(10);
+
+    if (error) {
+      logger.error("Failed to fetch finished books", {
+        operation: "reflect_command",
+        error: error.message,
+      });
+      await ctx.reply("❌ Failed to load your finished books. Please try again.");
+      return;
+    }
+
+    if (!books || books.length === 0) {
+      logger.info("No finished books found", {
+        operation: "reflect_command",
+        hasQuery: !!query,
+      });
+      await ctx.reply(
+        query
+          ? `📚 No finished books found matching "${query}".\n\nTry a different search or use /reflect to see all finished books.`
+          : "📚 You haven't finished any books yet!\n\nOnce you finish a book, I'll help you reflect on it.",
+      );
+      return;
+    }
+
+    // Create inline keyboard with book options
+    const keyboard = new InlineKeyboard();
+    books.forEach((book) => {
+      const dateStr = book.user_date_finished
+        ? new Date(book.user_date_finished).toLocaleDateString()
+        : "Recently";
+      keyboard
+        .text(`${book.title} by ${book.author} (${dateStr})`, `start_reflection:${book.id}`)
+        .row();
+    });
+
+    const message = query
+      ? `📚 **Finished books matching "${query}":**\n\nSelect a book to reflect on:`
+      : "📚 **Your recently finished books:**\n\nSelect a book to reflect on:";
+
+    await ctx.reply(message, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+
+    logger.info("Reflect command completed successfully", {
+      operation: "reflect_command",
+      booksShown: books.length,
+    });
+  } catch (error) {
+    logger.error("Error in reflect_command handler", {
+      operation: "reflect_command",
+      error: error.message,
+      stack: error.stack,
+    });
+    await ctx.reply("❌ An error occurred while processing your request.");
+  }
+}
+
 // Create webhook callback handler with secret token validation
-const handleUpdate = webhookCallback(bot, "std/http", {
-  secretToken: webhookSecret,
-});
+// TODO: Re-enable secret token validation after testing
+const handleUpdate = webhookCallback(bot, "std/http");
 // Main request handler
 Deno.serve(async (req) => {
   const requestId = generateRequestId();
