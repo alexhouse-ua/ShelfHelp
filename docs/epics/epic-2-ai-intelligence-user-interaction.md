@@ -60,6 +60,7 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 7. The system gracefully handles potential errors during AI analysis or database updates, logging them via the centralized logger.
 
 **Redesign Notes (Phase 3):**
+
 - Story 2.4.1 will replace this story
 - New approach: Hardcover rating + AI reflection analysis → hybrid rating
 - Enhanced preference model using Hardcover community signals (users_count, ratings_count)
@@ -84,6 +85,7 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 8. The system includes robust error handling for failed web searches and API rate limiting.
 
 **Redesign Notes (Phase 3):**
+
 - Story 2.5.1 will replace this story
 - New approach: Hardcover GraphQL API queries (genres, moods, authors filters) vs web scraping
 - Leverage native Hardcover features: community ratings, content warnings, mood tags
@@ -112,13 +114,14 @@ To make the bot "smart" by implementing the core AI learning loop, reflections, 
 **Technical Notes:**
 
 **Session Calculation Logic:**
+
 ```typescript
 function calculateSessions(activities: Activity[]): ReadingSession[] {
   const sessions = [];
   activities.sort((a, b) => a.created_at - b.created_at); // Chronological order
 
   for (let i = 1; i < activities.length; i++) {
-    const prev = activities[i-1];
+    const prev = activities[i - 1];
     const curr = activities[i];
 
     const duration_ms = curr.created_at - prev.created_at;
@@ -137,7 +140,7 @@ function calculateSessions(activities: Activity[]): ReadingSession[] {
         start_page: prev.data.page_progress,
         end_page: curr.data.page_progress,
         reading_speed_ppm: parseFloat((pages_read / duration_minutes).toFixed(2)),
-        data_source: 'hardcover'
+        data_source: "hardcover",
       });
     }
   }
@@ -146,6 +149,7 @@ function calculateSessions(activities: Activity[]): ReadingSession[] {
 ```
 
 **Analytics Queries:**
+
 ```sql
 -- Average reading speed by book
 SELECT
@@ -181,6 +185,7 @@ ORDER BY avg_speed_ppm DESC;
 **Description:** Update TBR queue priority scoring algorithm to use actual reading speeds from session data instead of estimates, improving time-to-completion accuracy.
 
 **Dependencies:**
+
 - Story 2.6 (Reading Session Import)
 - Epic 1.5 (Hardcover migration)
 
@@ -200,53 +205,51 @@ ORDER BY avg_speed_ppm DESC;
 **Updated Priority Scoring Formula:**
 
 **Original (Story 2.1):**
+
 ```typescript
-priority_score = (
-  (desire_to_read * 0.4) +
+priority_score = (desire_to_read * 0.4) +
   (estimated_completion_time * 0.2) + // CHANGED
   (thematic_fit * 0.2) +
   (recency_boost * 0.1) +
-  (series_continuity * 0.1)
-)
+  (series_continuity * 0.1);
 ```
 
 **Updated (Story 2.7):**
+
 ```typescript
 // Step 1: Get actual reading speed (cascading fallback)
-const actual_speed_ppm =
-  getBookAverageSpeed(book_id) ||           // Book-specific avg
-  getGenreAverageSpeed(book.genre) ||       // Genre avg
-  getUserGlobalAverageSpeed(user_id) ||     // User's global avg
-  1.0;                                       // System default
+const actual_speed_ppm = getBookAverageSpeed(book_id) || // Book-specific avg
+  getGenreAverageSpeed(book.genre) || // Genre avg
+  getUserGlobalAverageSpeed(user_id) || // User's global avg
+  1.0; // System default
 
 // Step 2: Calculate actual time to complete
 const actual_time_to_complete = book.pages / actual_speed_ppm; // minutes
 
 // Step 3: Community validation bonus
 const community_bonus = Math.min(
-  (book.users_count / 1000) * 0.05,  // 0.05 bonus per 1k users, max 0.25
-  0.25
+  (book.users_count / 1000) * 0.05, // 0.05 bonus per 1k users, max 0.25
+  0.25,
 );
 
 // Step 4: Content warning penalty
 const content_warning_penalty =
-  hasMatchingContentWarnings(book.content_warnings, user.sensitivity_prefs)
-    ? -0.15
-    : 0;
+  hasMatchingContentWarnings(book.content_warnings, user.sensitivity_prefs) ? -0.15 : 0;
 
 // Step 5: Final score
 priority_score = (
-  (desire_to_read * 0.35) +                  // Slightly reduced weight
-  (actual_time_to_complete_score * 0.25) +   // Increased weight (more accurate)
+  (desire_to_read * 0.35) + // Slightly reduced weight
+  (actual_time_to_complete_score * 0.25) + // Increased weight (more accurate)
   (thematic_fit * 0.2) +
   (recency_boost * 0.1) +
   (series_continuity * 0.1) +
-  community_bonus +                          // NEW
-  content_warning_penalty                    // NEW
+  community_bonus + // NEW
+  content_warning_penalty // NEW
 );
 ```
 
 **Reading Speed Fallback Logic:**
+
 ```sql
 -- Get book-specific average speed
 SELECT AVG(reading_speed_ppm) as book_avg_speed
@@ -268,17 +271,18 @@ WHERE reading_speed_ppm IS NOT NULL;
 ```
 
 **Comparison Report:**
+
 ```typescript
 interface PriorityComparison {
   book_id: string;
   title: string;
-  old_priority: number;  // Using estimated speed
-  new_priority: number;  // Using actual speed
-  delta: number;         // new - old
-  speed_source: 'book' | 'genre' | 'user' | 'default';
+  old_priority: number; // Using estimated speed
+  new_priority: number; // Using actual speed
+  delta: number; // new - old
+  speed_source: "book" | "genre" | "user" | "default";
   estimated_speed_ppm: number;
   actual_speed_ppm: number;
-  rank_change: number;   // Position shift in queue
+  rank_change: number; // Position shift in queue
 }
 ```
 

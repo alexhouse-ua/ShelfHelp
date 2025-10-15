@@ -17,6 +17,7 @@ Validate technical feasibility of migrating from Goodreads/Kindle to Hardcover.a
 ## 🌐 Hardcover.app GraphQL API - Complete Specs
 
 ### Endpoint & Authentication
+
 ```
 Endpoint: https://api.hardcover.app/v1/graphql
 Console: https://cloud.hasura.io/public/graphiql?endpoint=https://api.hardcover.app/v1/graphql
@@ -26,6 +27,7 @@ Token Format: Plain token (NOT "Bearer TOKEN")
 ```
 
 ### Rate Limits & Constraints
+
 ```
 Rate Limit: 60 requests/minute
 Daily Max: 86,400 requests (60/min × 1440 min)
@@ -35,17 +37,20 @@ Token Expiry: January 1st annually (auto-reset)
 ```
 
 ### Data Access Scope
+
 - ✅ Your own user data
 - ✅ Public data (books, authors)
 - ✅ Followed users' data
 - ❌ Other private users
 
 ### Disabled Operators
+
 ```
 _like, _ilike (regex operators disabled for performance)
 ```
 
 ### HTTP Status Codes
+
 ```
 200: Success
 401: Invalid/expired token
@@ -60,9 +65,11 @@ _like, _ilike (regex operators disabled for performance)
 ## 📚 API Schema Capabilities
 
 ### Books API
+
 **Query**: `books(where: {...}, limit: N, order_by: {...})`
 
 **Available Fields**:
+
 ```graphql
 {
   id                  # PRIMARY KEY for our hardcover_id
@@ -91,9 +98,11 @@ _like, _ilike (regex operators disabled for performance)
 ---
 
 ### Users API
+
 **Query**: `me { ... }` (current user)
 
 **Available Fields**:
+
 ```graphql
 {
   id                  # USER_ID for activity queries
@@ -110,9 +119,11 @@ _like, _ilike (regex operators disabled for performance)
 ---
 
 ### Activities API ⚡ **CRITICAL FOR KOREADER**
+
 **Query**: `activities(where: {...}, order_by: {created_at: desc})`
 
 **Available Fields**:
+
 ```graphql
 {
   id                          # hardcover_activity_id (deduplication key)
@@ -126,12 +137,14 @@ _like, _ilike (regex operators disabled for performance)
 ```
 
 **Event Types**:
+
 - `UserBookActivity`: added, started, finished, rated, progress_update
 - `GoalActivity`: reading challenges, annual targets
 - `ListActivity`: list additions/removals
 - `PromptActivity`: journal entries
 
 **KOReader Sync Strategy**:
+
 ```typescript
 // Query activities to reconstruct reading sessions
 activities(
@@ -153,9 +166,11 @@ activities(
 ---
 
 ### Editions API
+
 **Query**: `editions(where: {title: {_eq: "..."}}, ...)`
 
 **Available Fields**:
+
 ```graphql
 {
   id                  # edition_id for our schema
@@ -175,9 +190,11 @@ activities(
 ---
 
 ### Authors API
+
 **Query**: `authors(where: {...})`
 
 **Available Fields**:
+
 ```graphql
 {
   id
@@ -199,9 +216,11 @@ activities(
 ---
 
 ### Lists API
+
 **Query**: `lists(where: {user_id: {_eq: $userId}})`
 
 **Available Fields**:
+
 ```graphql
 {
   id                  # hardcover_list_id
@@ -221,6 +240,7 @@ activities(
 ```
 
 **Mutations Available**:
+
 ```graphql
 createList(input: {name, description, privacy})
 updateList(id, input: {...})
@@ -240,6 +260,7 @@ removeBookFromList(list_id, book_id)
 **Discovery**: User is using Hardcover KOReader plugin → auto-syncs to Hardcover
 
 **Architecture**:
+
 ```
 KOReader (Boox Palma)
   ↓ (via Hardcover plugin, <1min frequency)
@@ -259,6 +280,7 @@ Our Database (reading_sessions table)
 **Sync Frequency**: "No more than once per minute"
 
 **Data Synced**:
+
 - Current page number
 - Reading status (reading/finished)
 - Started timestamp
@@ -267,11 +289,13 @@ Our Database (reading_sessions table)
 - Notes/quotes (if enabled)
 
 **Book Matching**:
+
 1. Try ISBN → Hardcover book_id
 2. Fallback: Title + Author search
 3. User confirms match in plugin UI
 
 **WiFi Management**:
+
 - Auto-enable WiFi for sync
 - Auto-disable after (battery optimization)
 
@@ -282,6 +306,7 @@ Our Database (reading_sessions table)
 **Location**: `KOReader/settings/statistics.sqlite`
 
 **Tables**:
+
 ```sql
 -- Book metadata
 CREATE TABLE book (
@@ -307,6 +332,7 @@ CREATE TABLE page_stat_data (
 ```
 
 **Query Example**:
+
 ```sql
 SELECT
     b.title,
@@ -359,6 +385,7 @@ ORDER BY p.start_time;
 ### Complete Table Schemas
 
 #### books (alterations)
+
 ```sql
 ALTER TABLE books ADD COLUMN hardcover_id INTEGER UNIQUE;
 ALTER TABLE books ADD COLUMN moods TEXT[];
@@ -378,6 +405,7 @@ CREATE INDEX idx_books_users_count ON books(users_count DESC);
 ---
 
 #### reading_sessions (new)
+
 ```sql
 CREATE TABLE reading_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -403,6 +431,7 @@ CREATE UNIQUE INDEX idx_reading_sessions_activity
 ```
 
 **Query Example**:
+
 ```sql
 -- Get average reading speed for a book
 SELECT
@@ -419,6 +448,7 @@ GROUP BY b.id, b.title;
 ---
 
 #### book_activities (new)
+
 ```sql
 CREATE TABLE book_activities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -437,6 +467,7 @@ CREATE UNIQUE INDEX idx_book_activities_hardcover ON book_activities(hardcover_a
 ```
 
 **Query Example**:
+
 ```sql
 -- Get reading timeline for a book
 SELECT
@@ -451,6 +482,7 @@ ORDER BY activity_date;
 ---
 
 #### hardcover_lists (new)
+
 ```sql
 CREATE TABLE hardcover_lists (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -469,6 +501,7 @@ CREATE INDEX idx_hardcover_lists_hardcover_id ON hardcover_lists(hardcover_list_
 ---
 
 #### hardcover_list_books (new)
+
 ```sql
 CREATE TABLE hardcover_list_books (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -484,6 +517,7 @@ CREATE INDEX idx_list_books_position ON hardcover_list_books(list_id, position);
 ```
 
 **Query Example**:
+
 ```sql
 -- Get prioritized TBR queue from Hardcover list
 SELECT
@@ -507,6 +541,7 @@ ORDER BY lb.position;
 **Daily Quota**: 86,400 requests (60/min × 1440 min)
 
 **Projected Usage**:
+
 ```
 Activities sync (every 5 min):    288/day
 Book metadata refresh (daily):    100/day  (assume 100 books)
@@ -553,29 +588,29 @@ interface CacheConfig {
 async function callHardcoverAPI<T>(
   query: string,
   variables: any,
-  retries = 3
+  retries = 3,
 ): Promise<T> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const response = await fetch('https://api.hardcover.app/v1/graphql', {
-        method: 'POST',
+      const response = await fetch("https://api.hardcover.app/v1/graphql", {
+        method: "POST",
         headers: {
-          'authorization': process.env.HARDCOVER_API_TOKEN,
-          'content-type': 'application/json'
+          "authorization": process.env.HARDCOVER_API_TOKEN,
+          "content-type": "application/json",
         },
-        body: JSON.stringify({ query, variables })
+        body: JSON.stringify({ query, variables }),
       });
 
       if (response.status === 429) {
         // Exponential backoff: 2s, 4s, 8s
         const waitTime = Math.pow(2, attempt) * 1000;
-        logger.warn('Rate limited', { attempt, waitTime });
+        logger.warn("Rate limited", { attempt, waitTime });
         await sleep(waitTime);
         continue;
       }
 
       if (response.status === 401) {
-        throw new Error('HARDCOVER_TOKEN_EXPIRED');
+        throw new Error("HARDCOVER_TOKEN_EXPIRED");
       }
 
       if (!response.ok) {
@@ -584,10 +619,9 @@ async function callHardcoverAPI<T>(
 
       const data = await response.json();
       return data.data;
-
     } catch (error) {
       if (attempt === retries) throw error;
-      logger.error('API call failed', { attempt, error });
+      logger.error("API call failed", { attempt, error });
     }
   }
 }
@@ -633,6 +667,7 @@ SELECT cron.schedule(
 ### Book Matching Algorithm
 
 **Priority Order**:
+
 1. **ISBN Match** (highest confidence)
    ```sql
    SELECT hardcover_id
@@ -670,14 +705,14 @@ SELECT cron.schedule(
 ```typescript
 async function migrateGoodreadsToHardcover() {
   const goodreadsBooks = await supabase
-    .from('books')
-    .select('*')
-    .is('hardcover_id', null);  // Unmigrated books
+    .from("books")
+    .select("*")
+    .is("hardcover_id", null); // Unmigrated books
 
   const results = {
     matched: 0,
     unmatched: 0,
-    manual_review: []
+    manual_review: [],
   };
 
   for (const book of goodreadsBooks) {
@@ -691,24 +726,22 @@ async function migrateGoodreadsToHardcover() {
 
     if (hardcoverBook && hardcoverBook.confidence > 0.9) {
       // High confidence: auto-match
-      await supabase.from('books').update({
+      await supabase.from("books").update({
         hardcover_id: hardcoverBook.id,
         moods: hardcoverBook.moods,
         content_warnings: hardcoverBook.content_warnings,
         // ... other Hardcover fields
-        data_source: 'hardcover'
-      }).eq('id', book.id);
+        data_source: "hardcover",
+      }).eq("id", book.id);
 
       results.matched++;
-
     } else if (hardcoverBook && hardcoverBook.confidence > 0.7) {
       // Medium confidence: flag for review
       results.manual_review.push({
         goodreads_book: book,
         suggested_match: hardcoverBook,
-        confidence: hardcoverBook.confidence
+        confidence: hardcoverBook.confidence,
       });
-
     } else {
       // No match: create new or manual review
       results.unmatched++;
@@ -770,41 +803,46 @@ async function migrateGoodreadsToHardcover() {
 
 ### Risk Matrix (Final)
 
-| Risk | Likelihood | Impact | Mitigation | Status |
-|------|-----------|--------|------------|--------|
-| Rate limit | LOW | HIGH | Cache 24h, 2% quota usage | ✅ MITIGATED |
-| Token expiry | HIGH | MED | Calendar reminder, refresh workflow | ⚠️ PLANNED |
-| Book matching | MED | MED | Multi-strategy, manual review UI | ⚠️ PLANNED |
-| KOReader no sync | LOW | LOW | Fallback SQLite upload | ✅ MITIGATED |
-| Hardcover down | LOW | HIGH | Cache, retry queue | ⚠️ PLANNED |
-| Data loss | LOW | CRITICAL | Backup, dual source, rollback | ✅ MITIGATED |
+| Risk             | Likelihood | Impact   | Mitigation                          | Status       |
+| ---------------- | ---------- | -------- | ----------------------------------- | ------------ |
+| Rate limit       | LOW        | HIGH     | Cache 24h, 2% quota usage           | ✅ MITIGATED |
+| Token expiry     | HIGH       | MED      | Calendar reminder, refresh workflow | ⚠️ PLANNED   |
+| Book matching    | MED        | MED      | Multi-strategy, manual review UI    | ⚠️ PLANNED   |
+| KOReader no sync | LOW        | LOW      | Fallback SQLite upload              | ✅ MITIGATED |
+| Hardcover down   | LOW        | HIGH     | Cache, retry queue                  | ⚠️ PLANNED   |
+| Data loss        | LOW        | CRITICAL | Backup, dual source, rollback       | ✅ MITIGATED |
 
 ---
 
 ## ✅ Feasibility Checklist
 
 **API Capabilities**:
+
 - ✅ GraphQL endpoint documented and tested
 - ✅ All required schemas available (Books, Users, Activities, Lists)
 - ✅ Rate limits manageable (2% quota)
 - ✅ Authentication straightforward (bearer token)
 
 **KOReader Integration**:
+
 - ✅ Plugin auto-syncs to Hardcover (no manual work)
 - ✅ Activities API provides session data
 - ✅ Fallback: statistics.sqlite parsing (if needed)
 
 **Database Changes**:
+
 - ✅ Schema design complete (6 migrations)
 - ✅ Backward compatibility maintained (goodreads_id kept)
 - ✅ Rollback strategy documented
 
 **Migration Path**:
+
 - ✅ Book matching algorithm designed (ISBN → title → fuzzy)
 - ✅ Data backfill strategy defined
 - ✅ Manual review workflow for low-confidence matches
 
 **Risk Mitigation**:
+
 - ✅ All high-severity risks addressed
 - ✅ Backup strategy defined
 - ✅ Phased approach reduces blast radius
@@ -814,6 +852,7 @@ async function migrateGoodreadsToHardcover() {
 ## 📋 Implementation Checklist
 
 ### Story 1.5.1: Hardcover API Client
+
 - [ ] Create `_shared/hardcover-client.ts`
 - [ ] Implement rate limiting (60/min queue)
 - [ ] Implement caching (TTL-based)
@@ -823,6 +862,7 @@ async function migrateGoodreadsToHardcover() {
 - [ ] Unit tests for all methods
 
 ### Story 1.5.2: Data Ingestion
+
 - [ ] Query user's Activities history
 - [ ] Book matching: ISBN → title → fuzzy
 - [ ] Map Hardcover data → our schema
@@ -832,6 +872,7 @@ async function migrateGoodreadsToHardcover() {
 - [ ] Idempotency (dedup by hardcover_activity_id)
 
 ### Story 1.5.3: Schema Migration
+
 - [ ] Write 6 migration SQL files
 - [ ] Test migrations on staging
 - [ ] Test rollback procedure
@@ -839,6 +880,7 @@ async function migrateGoodreadsToHardcover() {
 - [ ] Create indexes for new columns
 
 ### Story 1.5.4: Deprecate Goodreads
+
 - [ ] Disable RSS cron job
 - [ ] Update all queries to use hardcover_id
 - [ ] Archive RSS function (don't delete)
@@ -849,16 +891,19 @@ async function migrateGoodreadsToHardcover() {
 ## 🔗 Reference Links
 
 **Hardcover API**:
+
 - Docs: https://docs.hardcover.app/api/getting-started/
 - Console: https://cloud.hasura.io/public/graphiql
 - Schemas: https://docs.hardcover.app/api/graphql/schemas/
 
 **KOReader**:
+
 - Wiki: https://github.com/koreader/koreader/wiki
 - Plugin: https://github.com/Billiam/hardcoverapp.koplugin
 - Dev Docs: https://koreader.rocks/doc/
 
 **Tools**:
+
 - KoInsight (stats viewer): https://github.com/GeorgeSG/KoInsight
 
 ---

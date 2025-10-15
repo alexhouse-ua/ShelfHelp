@@ -18,6 +18,7 @@ To migrate the ShelfHelp data pipeline from Goodreads/Kindle to Hardcover.app/KO
 **Feature Unlocks:** 26+ (content warnings, actual reading speed, multi-queues, community signals, etc.)
 
 **Key Technical Validations:**
+
 - ✅ Hardcover GraphQL API fully documented & accessible
 - ✅ Rate limits manageable (2.3% of daily quota with caching)
 - ✅ KOReader plugin auto-syncs to Hardcover (no manual SQLite extraction)
@@ -26,6 +27,7 @@ To migrate the ShelfHelp data pipeline from Goodreads/Kindle to Hardcover.app/KO
 - ✅ Rollback strategy documented (6-month dual-source period)
 
 **Reference Documents:**
+
 - Technical Research: `docs/architect-research-hardcover-migration.md`
 - Sprint Proposal: `docs/sprint-change-proposal-hardcover-migration.md`
 
@@ -53,12 +55,14 @@ To migrate the ShelfHelp data pipeline from Goodreads/Kindle to Hardcover.app/KO
 **Technical Notes:**
 
 **API Configuration:**
+
 - Endpoint: `https://api.hardcover.app/v1/graphql`
 - Token: Provided by user (store in Supabase secrets as `HARDCOVER_API_TOKEN`)
 - Rate Limit: 60/min (86,400/day)
 - Token Expiry: January 1st annually (requires calendar reminder Dec 15)
 
 **Cache Strategy:**
+
 ```typescript
 interface CacheConfig {
   books: { ttl: 24 * 60 * 60 * 1000 },      // 24h - metadata stable
@@ -71,6 +75,7 @@ interface CacheConfig {
 **Key GraphQL Queries:**
 
 Books:
+
 ```graphql
 query GetBook($id: Int!) {
   books(where: {id: {_eq: $id}}) {
@@ -84,6 +89,7 @@ query GetBook($id: Int!) {
 ```
 
 Activities:
+
 ```graphql
 query GetUserActivities($userId: String!, $since: timestamptz!) {
   activities(
@@ -100,6 +106,7 @@ query GetUserActivities($userId: String!, $since: timestamptz!) {
 ```
 
 Lists:
+
 ```graphql
 query GetUserLists($userId: String!) {
   lists(where: {user_id: {_eq: $userId}}) {
@@ -112,6 +119,7 @@ query GetUserLists($userId: String!) {
 ```
 
 **Dependencies:**
+
 - Supabase secrets: `HARDCOVER_API_TOKEN`
 - Testing: Deno Test Runner with mocked GraphQL responses
 
@@ -171,6 +179,7 @@ query GetUserLists($userId: String!) {
    - User selects or creates new
 
 **Session Calculation Example:**
+
 ```typescript
 // Activity 1: page 50 @ 10:00 AM
 // Activity 2: page 75 @ 10:30 AM
@@ -179,7 +188,7 @@ query GetUserLists($userId: String!) {
 function calculateSessions(activities: Activity[]) {
   const sessions = [];
   for (let i = 1; i < activities.length; i++) {
-    const prev = activities[i-1];
+    const prev = activities[i - 1];
     const curr = activities[i];
     const duration = (curr.created_at - prev.created_at) / 60000; // minutes
     const pages = curr.data.page_progress - prev.data.page_progress;
@@ -191,7 +200,7 @@ function calculateSessions(activities: Activity[]) {
         pages_read: pages,
         start_page: prev.data.page_progress,
         end_page: curr.data.page_progress,
-        reading_speed_ppm: pages / duration
+        reading_speed_ppm: pages / duration,
       });
     }
   }
@@ -200,6 +209,7 @@ function calculateSessions(activities: Activity[]) {
 ```
 
 **Dependencies:**
+
 - Story 1.5.1: Hardcover API Client
 - Story 1.5.3: Database migrations (books alterations, new tables)
 
@@ -227,6 +237,7 @@ function calculateSessions(activities: Activity[]) {
 **Migration Details:**
 
 **Migration 1: Hardcover Books Fields**
+
 ```sql
 -- File: 20251016000001_add_hardcover_books_fields.sql
 
@@ -252,6 +263,7 @@ COMMENT ON COLUMN books.series_position IS 'Position in series (supports decimal
 ```
 
 **Migration 2: Reading Sessions**
+
 ```sql
 -- File: 20251016000002_create_reading_sessions.sql
 
@@ -283,6 +295,7 @@ COMMENT ON COLUMN reading_sessions.data_source IS 'hardcover|koreader_manual|est
 ```
 
 **Migration 3: Book Activities**
+
 ```sql
 -- File: 20251016000003_create_book_activities.sql
 
@@ -307,6 +320,7 @@ COMMENT ON COLUMN book_activities.metadata IS 'Activity-specific data (page_prog
 ```
 
 **Migration 4: Hardcover Lists**
+
 ```sql
 -- File: 20251016000004_create_hardcover_lists.sql
 
@@ -339,6 +353,7 @@ COMMENT ON TABLE hardcover_list_books IS 'Books in lists with position tracking'
 ```
 
 **Migration 5: Data Backfill**
+
 ```sql
 -- File: 20251016000005_backfill_hardcover_data.sql
 
@@ -350,6 +365,7 @@ COMMENT ON MIGRATION IS 'Data backfill executed via hardcover-sync Edge Function
 ```
 
 **Migration 6: Deprecate Goodreads**
+
 ```sql
 -- File: 20251016000006_deprecate_goodreads_fields.sql
 
@@ -361,12 +377,14 @@ COMMENT ON COLUMN books.data_source IS 'Track origin: goodreads|hardcover|manual
 ```
 
 **Rollback Strategy:**
+
 - Pre-migration backup: `pg_dump > backup_pre_hardcover_$(date +%Y%m%d).sql`
 - Migration log table tracks all changes
 - 6-month dual-source period allows rollback
 - Rollback procedure documented in migration files
 
 **Dependencies:**
+
 - None (can develop in parallel with 1.5.1/1.5.2)
 - Staging database for testing
 
@@ -429,6 +447,7 @@ SELECT cron.unschedule('rss-ingestion');
 ```
 
 **Rate Limit Monitoring:**
+
 ```sql
 -- Query to monitor API usage
 SELECT
@@ -444,26 +463,28 @@ ORDER BY hour DESC;
 ```
 
 **Manual Sync Endpoint:**
+
 ```typescript
 // supabase/functions/hardcover-sync/index.ts
 serve(async (req) => {
-  const { sync_type = 'activities' } = await req.json();
+  const { sync_type = "activities" } = await req.json();
 
   // Validate sync_type
-  if (!['full', 'activities', 'lists', 'manual'].includes(sync_type)) {
-    return new Response('Invalid sync_type', { status: 400 });
+  if (!["full", "activities", "lists", "manual"].includes(sync_type)) {
+    return new Response("Invalid sync_type", { status: 400 });
   }
 
   // Execute sync
   const result = await performSync(sync_type);
 
   return new Response(JSON.stringify(result), {
-    headers: { 'Content-Type': 'application/json' }
+    headers: { "Content-Type": "application/json" },
   });
 });
 ```
 
 **Rollback Procedure:**
+
 ```sql
 -- Re-enable RSS ingestion
 SELECT cron.schedule(
@@ -481,6 +502,7 @@ UPDATE books SET data_source = 'goodreads' WHERE data_source = 'hardcover';
 ```
 
 **Dependencies:**
+
 - Story 1.5.1: Hardcover API Client
 - Story 1.5.2: Data Ingestion Function
 - Story 1.5.3: Database Migrations
@@ -516,17 +538,20 @@ UPDATE books SET data_source = 'goodreads' WHERE data_source = 'hardcover';
 ## Impact on Future Epics
 
 **Epic 2 Stories Modified:**
+
 - **Story 2.4** (AI Ratings): REDESIGNED - Use Hardcover rating + AI reflection analysis (see Phase 3)
 - **Story 2.5** (Discovery): REDESIGNED - Use Hardcover API vs web scraping (see Phase 3)
 - **Story 2.6** (NEW): Reading session import (Phase 2 - depends on Epic 1.5)
 - **Story 2.7** (NEW): Priority scoring update with actual speed (Phase 2 - depends on Epic 1.5)
 
 **Epic 2 Stories Enhanced:**
+
 - **Story 2.1** (Queue): Can use actual reading speed, community signals (users_count), content warnings
 - **Story 2.2** (Mood Rec): Native mood tags from Hardcover (moods field)
 - **Story 2.3** (Reflection): Can reference Hardcover activity timeline
 
 **Future Enhancements Unlocked:**
+
 - Multi-queue management (Hardcover lists sync)
 - Bidirectional sync (app changes → Hardcover)
 - Calibre library integration (via ISBN/edition matching)
@@ -539,6 +564,7 @@ UPDATE books SET data_source = 'goodreads' WHERE data_source = 'hardcover';
 **Migration Timeline:** 2.8 weeks (3+5+4+2 days = 14 days)
 
 **Risk Assessment:** LOW
+
 - All technical requirements validated by architect
 - Rate limits manageable (2.3% quota with caching)
 - Rollback strategy documented (6-month dual-source)
@@ -546,6 +572,7 @@ UPDATE books SET data_source = 'goodreads' WHERE data_source = 'hardcover';
 - KOReader sync confirmed working
 
 **Feature Unlock:** 26+ new capabilities
+
 - Content warnings filtering
 - Actual reading speed (vs estimates)
 - Community engagement signals
@@ -555,6 +582,7 @@ UPDATE books SET data_source = 'goodreads' WHERE data_source = 'hardcover';
 - And 20+ more...
 
 **Post-Epic Handoff:**
+
 - Phase 2 (Week 4): Stories 2.6-2.7 added to Epic 2
 - Phase 3 (Weeks 5-6): Stories 2.4.1, 2.5.1, 2.1.1, 2.2.1 (enhancements)
 - All Phase 2/3 stories depend on Epic 1.5 completion
