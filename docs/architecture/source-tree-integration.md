@@ -18,11 +18,12 @@ ShelfHelp/
 ├── supabase/             # Supabase project (Edge Functions, migrations, config)
 │   ├── functions/        # Edge Functions (one subfolder per function)
 │   │   ├── telegram-webhook/      # Main bot handler
-│   │   ├── rss-ingestion/         # Goodreads RSS ingestion
+│   │   ├── hardcover-sync/        # Hardcover GraphQL API sync (Epic 1.5+)
+│   │   ├── rss-ingestion/         # ⏸️ DEPRECATED: Goodreads RSS (archived, Epic 1.5)
 │   │   ├── csv-backfill/          # Historical CSV import
 │   │   ├── enrich-metadata/       # AI enrichment
 │   │   ├── seed-lookup-data/      # Lookup table seeding
-│   │   └── _shared/               # Shared utilities (logger, error-handler, etc.)
+│   │   └── _shared/               # Shared utilities (logger, error-handler, hardcover-client)
 │   ├── migrations/        # Database schema migrations
 │   └── config.toml        # Static file bundling config
 ├── tests/                # All test files (unit, integration)

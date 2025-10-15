@@ -13,14 +13,29 @@
   - **1.6: Core Error Handling & Logging** ✅ Done - Added centralized error handling and structured logging framework across all Edge Functions. QA: PASS (eliminated 140 lines of duplicated code)
   - **1.7: Production Deployment** ✅ Done - Deployed all 5 Edge Functions to production, seeded lookup tables, executed historical backfill (521 total books), activated RSS ingestion cron job. QA: PASS (90/100, all CodeRabbitAI fixes applied)
 
+## Epic 1.5: Hardcover Migration
+
+- **Epic Goal:** Migrate from Goodreads/Kindle to Hardcover.app/KOReader/Calibre stack, unlocking 26+ features including actual reading speed, content warnings, and community signals.
+- **Epic Status:** Approved (Phase 1 - BLOCKING)
+- **Timeline:** 2.8 weeks
+- **Stories:**
+  - **1.5.1: Hardcover API Client** (3d) - Rate-limited GraphQL client with caching, error handling, exponential backoff
+  - **1.5.2: Data Ingestion & Book Matching** (5d) - Historical data import, book matching (ISBN → title → fuzzy), session reconstruction
+  - **1.5.3: Database Schema Migration** (4d) - 6 migrations: +8 bk fields, 3 new tables (reading_sessions, book_activities, hardcover_lists)
+  - **1.5.4: Activate Hardcover Sync** (2d) - pg_cron jobs (5min activities, daily full), disable RSS, rate limit monitoring
+
 ## Epic 2: AI Intelligence & User Interaction
 
 - **Epic Goal:** To make the bot "smart" by implementing the core AI learning loop, reflections, and personalized recommendation features.
 - **Stories:**
-  - **2.1: TBR Queue Prioritization**: Implement the business logic for scoring and dynamically prioritizing the "To Be Read" queue.
-  - **2.2: Mood-Based Recommendation**: Implement the core RAG pipeline for providing mood-based book recommendations.
-  - **2.3: Post-Read Reflection**: Implement the proactive, multi-step conversational workflow for post-read reflections.
-  - **2.4: AI Ratings & Preference Updates**: Implement the AI analysis of reflection responses to generate objective ratings and update the user's preference model.
+  - **2.0: CI/CD Confidence Net** ✅ Approved - Fast, reliable CI/CD with automated testing guardrails
+  - **2.1: TBR Queue Prioritization** ✅ Done - Business logic for scoring and dynamically prioritizing TBR queue
+  - **2.2: Mood-Based Recommendation** ✅ Done - Core RAG pipeline for mood-based recommendations
+  - **2.3: Post-Read Reflection** - Proactive, multi-step conversational workflow for post-read reflections
+  - **2.4: AI Ratings & Preference Updates** ⏸️ HOLD - Redesign required (Story 2.4.1 Phase 3: Hardcover rating + AI hybrid)
+  - **2.5: AI-Powered Book Discovery** ⏸️ HOLD - Redesign required (Story 2.5.1 Phase 3: Hardcover GraphQL vs web scraping)
+  - **2.6: Reading Session Import** (3d) - Import sessions from Hardcover Activities API, calculate actual reading speeds
+  - **2.7: Priority Scoring with Actual Speed** (2d) - Update queue scoring to use actual speeds, community signals, content warnings
 
 ## Epic 3: Insights & Production Readiness
 

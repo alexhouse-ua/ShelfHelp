@@ -2,7 +2,7 @@
 
 ## Functional Requirements
 
-- **FR1:** The system must automatically ingest data from multiple sources, including the Goodreads RSS feed and other specified web locations.
+- **FR1:** The system must automatically ingest data from Hardcover.app via GraphQL API, including books, activities, reading sessions, and user lists.
 - **FR2:** The system must automatically enrich newly added book data with additional metadata by sourcing it from the web.
 - **FR3:** The system must allow the user to add new books to their list via simple, natural language conversational commands.
 - **FR4:** The system must initiate a proactive, multi-step reflection workflow when the user marks a book as 'Finished'.
@@ -12,6 +12,11 @@
 - **FR8:** The system must generate and deliver automated, text-based weekly and monthly summary reports.
 - **FR9:** The system must support stateful, multi-step conversational workflows to guide the user through various predefined tasks.
 - **FR10:** The system must be able to understand and answer ad-hoc, free-form natural language questions from the user by analyzing its entire knowledge base.
+- **FR11:** The system must sync reading sessions from KOReader (via Hardcover plugin) to calculate actual reading speeds per book and genre.
+- **FR12:** The system must display content warnings from Hardcover for books and allow filtering based on user sensitivity preferences.
+- **FR13:** The system must use actual reading speeds (not estimates) for TBR queue time-to-completion calculations.
+- **FR14:** The system must support multiple dynamic TBR queues via bidirectional sync with Hardcover lists.
+- **FR15:** The system must incorporate community signals (users_count, ratings_count) into recommendation scoring.
 
 ## Non-Functional Requirements
 

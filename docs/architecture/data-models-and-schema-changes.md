@@ -161,6 +161,123 @@ CREATE INDEX idx_conversational_state_session ON conversational_state (session_i
 CREATE INDEX idx_conversational_state_expires ON conversational_state (expires_at);
 ```
 
+## Hardcover Migration Schema Changes
+
+**Migration Date:** Epic 1.5 (2025-10-15)
+**Status:** Approved
+**Reference:** `docs/architect-research-hardcover-migration.md`
+
+### Books Table Additions
+
+```sql
+-- Epic 1.5 Migration 1: Add Hardcover fields
+ALTER TABLE books ADD COLUMN IF NOT EXISTS hardcover_id INTEGER UNIQUE;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS moods TEXT[];
+ALTER TABLE books ADD COLUMN IF NOT EXISTS content_warnings TEXT[];
+ALTER TABLE books ADD COLUMN IF NOT EXISTS users_count INTEGER DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS ratings_count INTEGER DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS lists_count INTEGER DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS series_position DECIMAL(4,2);
+ALTER TABLE books ADD COLUMN IF NOT EXISTS edition_id INTEGER;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS physical_format TEXT;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS data_source TEXT DEFAULT 'hardcover';
+
+CREATE INDEX IF NOT EXISTS idx_books_hardcover_id ON books(hardcover_id);
+CREATE INDEX IF NOT EXISTS idx_books_users_count ON books(users_count DESC);
+
+COMMENT ON COLUMN books.hardcover_id IS 'Primary key from Hardcover API (books.id)';
+COMMENT ON COLUMN books.moods IS 'Native mood tags from Hardcover (TEXT array)';
+COMMENT ON COLUMN books.content_warnings IS 'Sensitive content flags from Hardcover';
+COMMENT ON COLUMN books.users_count IS 'Community engagement signal (popularity)';
+COMMENT ON COLUMN books.data_source IS 'Track origin: goodreads|hardcover|manual';
+```
+
+### Reading Sessions Table
+
+```sql
+-- Epic 1.5 Migration 2: Reading sessions from KOReader/Hardcover
+CREATE TABLE reading_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    hardcover_activity_id INTEGER,
+    session_start TIMESTAMP WITH TIME ZONE NOT NULL,
+    session_end TIMESTAMP WITH TIME ZONE NOT NULL,
+    duration_minutes INTEGER NOT NULL,
+    pages_read INTEGER NOT NULL,
+    start_page INTEGER,
+    end_page INTEGER,
+    reading_speed_ppm DECIMAL(5,2),
+    data_source TEXT DEFAULT 'hardcover',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+CREATE INDEX idx_reading_sessions_book_id ON reading_sessions(book_id);
+CREATE INDEX idx_reading_sessions_start ON reading_sessions(session_start DESC);
+CREATE UNIQUE INDEX idx_reading_sessions_activity
+    ON reading_sessions(hardcover_activity_id)
+    WHERE hardcover_activity_id IS NOT NULL;
+
+COMMENT ON TABLE reading_sessions IS 'Individual reading sessions from KOReader/Hardcover';
+COMMENT ON COLUMN reading_sessions.reading_speed_ppm IS 'Pages per minute (calculated)';
+COMMENT ON COLUMN reading_sessions.data_source IS 'hardcover|koreader_manual|estimated';
+```
+
+### Book Activities Table
+
+```sql
+-- Epic 1.5 Migration 3: Activity timeline from Hardcover
+CREATE TABLE book_activities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    hardcover_activity_id INTEGER UNIQUE NOT NULL,
+    activity_type TEXT NOT NULL,
+    activity_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+CREATE INDEX idx_book_activities_book_id ON book_activities(book_id);
+CREATE INDEX idx_book_activities_type ON book_activities(activity_type);
+CREATE INDEX idx_book_activities_date ON book_activities(activity_date DESC);
+CREATE UNIQUE INDEX idx_book_activities_hardcover ON book_activities(hardcover_activity_id);
+
+COMMENT ON TABLE book_activities IS 'Activity timeline from Hardcover (added, started, finished, rated, etc.)';
+COMMENT ON COLUMN book_activities.activity_type IS 'added|started|finished|rated|abandoned|progress_update';
+```
+
+### Hardcover Lists Tables
+
+```sql
+-- Epic 1.5 Migration 4: Hardcover list sync
+CREATE TABLE hardcover_lists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    hardcover_list_id INTEGER UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    privacy_setting TEXT,
+    books_count INTEGER DEFAULT 0,
+    last_synced TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+CREATE TABLE hardcover_list_books (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    list_id UUID NOT NULL REFERENCES hardcover_lists(id) ON DELETE CASCADE,
+    book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    date_added TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    UNIQUE(list_id, book_id)
+);
+
+CREATE INDEX idx_hardcover_lists_hardcover_id ON hardcover_lists(hardcover_list_id);
+CREATE INDEX idx_list_books_list_id ON hardcover_list_books(list_id);
+CREATE INDEX idx_list_books_position ON hardcover_list_books(list_id, position);
+
+COMMENT ON TABLE hardcover_lists IS 'Synced lists from Hardcover (TBR queues, custom lists)';
+COMMENT ON TABLE hardcover_list_books IS 'Books in lists with position tracking';
+```
+
 ## Data Import Sources
 
 ### CSV Import (Historical Backfill)
@@ -189,9 +306,11 @@ CREATE INDEX idx_conversational_state_expires ON conversational_state (expires_a
 
 **Date Format**: MM/DD/YY with 2-digit year conversion (00-49 → 2000-2049, 50-99 → 1950-1999)
 
-### RSS Feed Import (Ongoing Sync)
+### RSS Feed Import (DEPRECATED - Epic 1.5)
 
+**Status**: ⏸️ DEPRECATED (replaced by Hardcover GraphQL API in Epic 1.5)
 **Source**: Goodreads RSS feed (environment variable `GOODREADS_RSS_FEED_URL_READ`)
+**Rollback**: 6-month retention period (until 2025-04-15), cron disabled but archived
 
 **Filtering**: None - imports all books from any shelf
 
@@ -214,6 +333,67 @@ CREATE INDEX idx_conversational_state_expires ON conversational_state (expires_a
 | _(hardcoded)_                             | `status`                                | `"to_read"`                         |
 
 **Note**: RSS `book_description` is NOT mapped to `ai_summary` - summaries require AI processing via the enrichment pipeline.
+
+### Hardcover GraphQL API Import (Active - Epic 1.5+)
+
+**Status**: ✅ ACTIVE (Epic 1.5)
+**Endpoint**: `https://api.hardcover.app/v1/graphql`
+**Authentication**: Bearer token (env: `HARDCOVER_API_TOKEN`)
+**Rate Limit**: 60 req/min (86,400/day) - 24h caching for books, 5min for activities
+**Reference**: `docs/architect-research-hardcover-migration.md`
+
+**Sync Frequency**:
+- **Activities**: Every 5 minutes (pg_cron: `hardcover-activities-sync`)
+- **Full Sync**: Daily at 3 AM UTC (pg_cron: `hardcover-full-sync`)
+- **Manual**: User-triggered via `/hardcover-sync?sync_type=manual`
+
+**GraphQL Field Mappings**:
+
+| Hardcover Field | Database Field(s) | Table | Processing |
+|----------------|-------------------|-------|------------|
+| `books.id` | `hardcover_id` | books | Direct (PRIMARY KEY) |
+| `books.title` | `title`, `series_name`, `series_position` | books | Parse series |
+| `books.authors.name` | `author` | books | First author or joined |
+| `books.isbn_10` / `books.isbn_13` | `isbn` | books | Prefer ISBN-13 |
+| `books.pages` | `page_count` | books | Direct |
+| `books.release_date` | `publication_date` | books | ISO date |
+| `books.moods` | `moods` | books | TEXT[] array |
+| `books.content_warnings` | `content_warnings` | books | TEXT[] array |
+| `books.users_count` | `users_count` | books | Community signal |
+| `books.ratings_count` | `ratings_count` | books | Validation metric |
+| `books.lists_count` | `lists_count` | books | Popularity signal |
+| `books.series_position` | `series_position` | books | DECIMAL (supports 1.5) |
+| `editions.id` | `edition_id` | books | Edition tracking |
+| `editions.physical_format` | `physical_format` | books | ebook\|hardcover\|paperback\|audiobook |
+| `activities.id` | `hardcover_activity_id` | book_activities | Deduplication key |
+| `activities.event` | `activity_type` | book_activities | UserBookActivity types |
+| `activities.created_at` | `activity_date` | book_activities | ISO timestamp |
+| `activities.data` | `metadata` | book_activities | JSONB (page_progress, rating, etc.) |
+| `activities.*` (session calc) | `session_start`, `session_end`, etc. | reading_sessions | Delta calculation |
+| `lists.id` | `hardcover_list_id` | hardcover_lists | List sync |
+| `list_books.position` | `position` | hardcover_list_books | Queue ordering |
+
+**Activity Event Types**:
+- `added`: Book added to library
+- `started`: Reading started
+- `finished`: Reading completed
+- `rated`: User rated book
+- `progress_update`: Page progress changed (used for session calculation)
+- `abandoned`: Reading abandoned
+
+**Session Calculation**:
+Reading sessions are reconstructed from `progress_update` activities by calculating deltas:
+```typescript
+// Activity 1: page 50 @ 10:00 AM
+// Activity 2: page 75 @ 10:30 AM
+// → Session: 30min, 25 pages, 0.83 ppm
+```
+
+**Book Matching Strategy** (for existing Goodreads books):
+1. ISBN match (confidence: 1.0)
+2. Exact title + author (confidence: 0.95)
+3. Fuzzy title + author (confidence: calculated via pg_trgm)
+4. Manual review (confidence: <0.7, flagged in migration_log)
 
 ## Data Constraints and Business Rules
 
