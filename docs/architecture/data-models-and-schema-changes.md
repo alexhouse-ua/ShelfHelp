@@ -343,37 +343,39 @@ COMMENT ON TABLE hardcover_list_books IS 'Books in lists with position tracking'
 **Reference**: `docs/architect-research-hardcover-migration.md`
 
 **Sync Frequency**:
+
 - **Activities**: Every 5 minutes (pg_cron: `hardcover-activities-sync`)
 - **Full Sync**: Daily at 3 AM UTC (pg_cron: `hardcover-full-sync`)
 - **Manual**: User-triggered via `/hardcover-sync?sync_type=manual`
 
 **GraphQL Field Mappings**:
 
-| Hardcover Field | Database Field(s) | Table | Processing |
-|----------------|-------------------|-------|------------|
-| `books.id` | `hardcover_id` | books | Direct (PRIMARY KEY) |
-| `books.title` | `title`, `series_name`, `series_position` | books | Parse series |
-| `books.authors.name` | `author` | books | First author or joined |
-| `books.isbn_10` / `books.isbn_13` | `isbn` | books | Prefer ISBN-13 |
-| `books.pages` | `page_count` | books | Direct |
-| `books.release_date` | `publication_date` | books | ISO date |
-| `books.moods` | `moods` | books | TEXT[] array |
-| `books.content_warnings` | `content_warnings` | books | TEXT[] array |
-| `books.users_count` | `users_count` | books | Community signal |
-| `books.ratings_count` | `ratings_count` | books | Validation metric |
-| `books.lists_count` | `lists_count` | books | Popularity signal |
-| `books.series_position` | `series_position` | books | DECIMAL (supports 1.5) |
-| `editions.id` | `edition_id` | books | Edition tracking |
-| `editions.physical_format` | `physical_format` | books | ebook\|hardcover\|paperback\|audiobook |
-| `activities.id` | `hardcover_activity_id` | book_activities | Deduplication key |
-| `activities.event` | `activity_type` | book_activities | UserBookActivity types |
-| `activities.created_at` | `activity_date` | book_activities | ISO timestamp |
-| `activities.data` | `metadata` | book_activities | JSONB (page_progress, rating, etc.) |
-| `activities.*` (session calc) | `session_start`, `session_end`, etc. | reading_sessions | Delta calculation |
-| `lists.id` | `hardcover_list_id` | hardcover_lists | List sync |
-| `list_books.position` | `position` | hardcover_list_books | Queue ordering |
+| Hardcover Field                   | Database Field(s)                         | Table                | Processing                             |
+| --------------------------------- | ----------------------------------------- | -------------------- | -------------------------------------- |
+| `books.id`                        | `hardcover_id`                            | books                | Direct (PRIMARY KEY)                   |
+| `books.title`                     | `title`, `series_name`, `series_position` | books                | Parse series                           |
+| `books.authors.name`              | `author`                                  | books                | First author or joined                 |
+| `books.isbn_10` / `books.isbn_13` | `isbn`                                    | books                | Prefer ISBN-13                         |
+| `books.pages`                     | `page_count`                              | books                | Direct                                 |
+| `books.release_date`              | `publication_date`                        | books                | ISO date                               |
+| `books.moods`                     | `moods`                                   | books                | TEXT[] array                           |
+| `books.content_warnings`          | `content_warnings`                        | books                | TEXT[] array                           |
+| `books.users_count`               | `users_count`                             | books                | Community signal                       |
+| `books.ratings_count`             | `ratings_count`                           | books                | Validation metric                      |
+| `books.lists_count`               | `lists_count`                             | books                | Popularity signal                      |
+| `books.series_position`           | `series_position`                         | books                | DECIMAL (supports 1.5)                 |
+| `editions.id`                     | `edition_id`                              | books                | Edition tracking                       |
+| `editions.physical_format`        | `physical_format`                         | books                | ebook\|hardcover\|paperback\|audiobook |
+| `activities.id`                   | `hardcover_activity_id`                   | book_activities      | Deduplication key                      |
+| `activities.event`                | `activity_type`                           | book_activities      | UserBookActivity types                 |
+| `activities.created_at`           | `activity_date`                           | book_activities      | ISO timestamp                          |
+| `activities.data`                 | `metadata`                                | book_activities      | JSONB (page_progress, rating, etc.)    |
+| `activities.*` (session calc)     | `session_start`, `session_end`, etc.      | reading_sessions     | Delta calculation                      |
+| `lists.id`                        | `hardcover_list_id`                       | hardcover_lists      | List sync                              |
+| `list_books.position`             | `position`                                | hardcover_list_books | Queue ordering                         |
 
 **Activity Event Types**:
+
 - `added`: Book added to library
 - `started`: Reading started
 - `finished`: Reading completed
@@ -383,6 +385,7 @@ COMMENT ON TABLE hardcover_list_books IS 'Books in lists with position tracking'
 
 **Session Calculation**:
 Reading sessions are reconstructed from `progress_update` activities by calculating deltas:
+
 ```typescript
 // Activity 1: page 50 @ 10:00 AM
 // Activity 2: page 75 @ 10:30 AM
@@ -390,6 +393,7 @@ Reading sessions are reconstructed from `progress_update` activities by calculat
 ```
 
 **Book Matching Strategy** (for existing Goodreads books):
+
 1. ISBN match (confidence: 1.0)
 2. Exact title + author (confidence: 0.95)
 3. Fuzzy title + author (confidence: calculated via pg_trgm)

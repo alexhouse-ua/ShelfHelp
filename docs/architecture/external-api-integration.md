@@ -45,8 +45,9 @@
 
 - **Endpoint:** `https://api.hardcover.app/v1/graphql`
 - **Method:** `POST` (GraphQL over HTTP)
-- **Authentication:** Bearer token in `authorization` header (NOT "Bearer TOKEN" format)
-  - Header format: `authorization: [TOKEN_VALUE]`
+- **Authentication:** Bearer token in `authorization` header (Standard OAuth format)
+  - ✅ **Correct format:** `authorization: Bearer [TOKEN_VALUE]`
+  - ❌ **Incorrect format:** `authorization: [TOKEN_VALUE]` (Missing Bearer scheme)
   - Token location: https://hardcover.app/account/api
   - Environment variable: `HARDCOVER_API_TOKEN`
   - Token expiry: January 1st annually (auto-reset)
@@ -82,6 +83,7 @@
 **Module:** `supabase/functions/_shared/hardcover-client.ts`
 
 **Caching Strategy:**
+
 ```typescript
 interface CacheConfig {
   books: { ttl: 24 * 60 * 60 * 1000 },      // 24h - metadata stable
@@ -91,18 +93,29 @@ interface CacheConfig {
 }
 ```
 
+**Cache Key Generation:**
+
+- Implementation: Simple hash algorithm (djb2-style) sufficient for this use case
+- Approach: Combines GraphQL query string + JSON stringified variables into stable cache key
+- Formula: `hash(query + JSON.stringify(variables))`
+- Rationale: Fast generation, no external dependencies, acceptable collision rate for API caching
+- Future optimization: Can migrate to `crypto.subtle.digest('SHA-256', ...)` if needed for larger scale
+
 **Rate Limit Handling:**
+
 ```typescript
 // Exponential backoff on 429: 2s, 4s, 8s (3 attempts)
+// Standard OAuth Bearer token authentication
 async function callHardcoverAPI<T>(query: string, variables: any, retries = 3): Promise<T> {
   for (let attempt = 1; attempt <= retries; attempt++) {
-    const response = await fetch('https://api.hardcover.app/v1/graphql', {
-      method: 'POST',
+    const response = await fetch("https://api.hardcover.app/v1/graphql", {
+      method: "POST",
       headers: {
-        'authorization': process.env.HARDCOVER_API_TOKEN,
-        'content-type': 'application/json'
+        // ✅ Bearer token with scheme prefix (standard OAuth format)
+        "authorization": `Bearer ${process.env.HARDCOVER_API_TOKEN}`,
+        "content-type": "application/json",
       },
-      body: JSON.stringify({ query, variables })
+      body: JSON.stringify({ query, variables }),
     });
 
     if (response.status === 429) {
@@ -112,7 +125,7 @@ async function callHardcoverAPI<T>(query: string, variables: any, retries = 3): 
     }
 
     if (response.status === 401) {
-      throw new Error('HARDCOVER_TOKEN_EXPIRED');
+      throw new Error("HARDCOVER_TOKEN_EXPIRED");
     }
 
     if (!response.ok) {
@@ -125,6 +138,7 @@ async function callHardcoverAPI<T>(query: string, variables: any, retries = 3): 
 ```
 
 **Error Taxonomy:**
+
 - `HARDCOVER_TOKEN_EXPIRED`: Token expired (Jan 1 annual reset)
 - `HARDCOVER_RATE_LIMITED`: 429 after max retries
 - `HARDCOVER_API_ERROR:<status>`: HTTP error (403, 404, 500)
@@ -132,6 +146,7 @@ async function callHardcoverAPI<T>(query: string, variables: any, retries = 3): 
 - `HARDCOVER_TIMEOUT`: Query timeout (>30s)
 
 **Operational Policy:**
+
 - Timeout: 30s per request (API constraint)
 - Retries: Exponential backoff on 429 (2s, 4s, 8s) up to 3 attempts
 - Structured logs: `operation=hardcover_query`, `queryType`, `cacheHit`, `durationMs`, `attempt`
@@ -139,6 +154,7 @@ async function callHardcoverAPI<T>(query: string, variables: any, retries = 3): 
 ### Key GraphQL Queries
 
 #### Get Book Details
+
 ```graphql
 query GetBook($id: Int!) {
   books(where: {id: {_eq: $id}}) {
@@ -153,6 +169,7 @@ query GetBook($id: Int!) {
 ```
 
 #### Get User Activities (Reading Sessions)
+
 ```graphql
 query GetUserActivities($userId: String!, $since: timestamptz!) {
   activities(
@@ -169,6 +186,7 @@ query GetUserActivities($userId: String!, $since: timestamptz!) {
 ```
 
 #### Get User Lists
+
 ```graphql
 query GetUserLists($userId: String!) {
   lists(where: {user_id: {_eq: $userId}}) {
@@ -210,10 +228,12 @@ SELECT cron.schedule(
 ### Integration Points
 
 **Edge Functions:**
+
 - `hardcover-sync`: Main sync orchestrator (activities, books, lists)
 - `_shared/hardcover-client.ts`: Reusable GraphQL client
 
 **Database Tables:**
+
 - `books`: hardcover_id, moods, content_warnings, users_count, ratings_count
 - `reading_sessions`: Calculated from Activities API deltas
 - `book_activities`: Activity timeline (added, started, finished, rated, progress_update)
