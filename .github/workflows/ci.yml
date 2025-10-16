@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Job 1: Fast checks for code style and formatting
+  # Job 1: Fast checks for code style and formatting (runs on all commits)
   lint-and-format:
     runs-on: ubuntu-latest
     steps:
@@ -18,7 +18,6 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      # Cache Deno dependencies based on the lock file
       - name: Cache Deno dependencies
         uses: actions/cache@v4
         with:
@@ -31,7 +30,7 @@ jobs:
       - name: Run Deno format check
         run: deno fmt --check --ignore=docs/,README.md
 
-  # Job 2: Fast checks for pure business logic
+  # Job 2: Fast unit tests (runs on all commits)
   unit-tests:
     runs-on: ubuntu-latest
     steps:
@@ -41,7 +40,6 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      # Use the same dependency cache as the lint job
       - name: Cache Deno dependencies
         uses: actions/cache@v4
         with:
@@ -49,13 +47,14 @@ jobs:
           key: ${{ runner.os }}-deno-${{ hashFiles('**/deno.lock') }}
           restore-keys: |
             ${{ runner.os }}-deno-
-      # Run only unit tests, which are fast and have no external dependencies
       - name: Run Unit Tests
         run: deno test -A --ignore=**/*.integration.test.ts
 
-  # Job 3: Slower, more comprehensive tests that require a full database
+  # Job 3: Integration tests (ONLY runs on main branch and manual trigger)
   integration-tests:
-    runs-on: ubuntu-latest # Using a standard runner
+    runs-on: ubuntu-latest
+    # Only run on main branch pushes or manual workflow_dispatch
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
