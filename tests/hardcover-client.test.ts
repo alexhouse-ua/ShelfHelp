@@ -105,9 +105,9 @@ Deno.test("HardcoverClient - fetchBook success with cache", async () => {
   assertEquals(book.title, "Test Book");
   assertEquals(fetchCallCount, 1);
 
-  // Verify auth header (NO "Bearer" prefix!)
+  // Verify auth header (Bearer prefix required - standard OAuth format)
   const headers = fetchCalls[0].options.headers as Record<string, string>;
-  assertEquals(headers?.["authorization"], "test-token");
+  assertEquals(headers?.["authorization"], "Bearer test-token");
 
   // Second call should use cache
   const book2 = await client.fetchBook(12345);

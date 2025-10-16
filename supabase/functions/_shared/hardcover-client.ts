@@ -387,7 +387,7 @@ export class HardcoverClient {
             const res = await fetch(this.apiUrl, {
               method: "POST",
               headers: {
-                authorization: this.apiToken, // NO "Bearer" prefix!
+                authorization: `Bearer ${this.apiToken}`,
                 "content-type": "application/json",
               },
               body: JSON.stringify({ query, variables }),

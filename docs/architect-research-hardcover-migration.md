@@ -22,12 +22,12 @@ Validate technical feasibility of migrating from Goodreads/Kindle to Hardcover.a
 Endpoint: https://api.hardcover.app/v1/graphql
 Console: https://cloud.hasura.io/public/graphiql?endpoint=https://api.hardcover.app/v1/graphql
 
-Authentication:
-  ✅ Correct:   authorization: [YOUR_API_TOKEN]
-  ❌ Incorrect: authorization: Bearer [YOUR_API_TOKEN]
+Authentication (Standard OAuth Bearer format):
+  ✅ Correct:   authorization: Bearer [YOUR_API_TOKEN]
+  ❌ Incorrect: authorization: [YOUR_API_TOKEN]
 
 Token Location: https://hardcover.app/account/api
-Token Format: Plain API token (NO "Bearer" prefix - Hardcover does NOT use standard OAuth)
+Token Format: Bearer token (includes "Bearer " scheme prefix - standard OAuth format)
 ```
 
 ### Rate Limits & Constraints
@@ -609,8 +609,8 @@ async function callHardcoverAPI<T>(
       const response = await fetch("https://api.hardcover.app/v1/graphql", {
         method: "POST",
         headers: {
-          // ✅ Plain token - NO "Bearer" prefix (Hardcover does NOT use standard OAuth)
-          "authorization": process.env.HARDCOVER_API_TOKEN,
+          // ✅ Bearer token with scheme prefix (standard OAuth format required by Hardcover API)
+          "authorization": `Bearer ${process.env.HARDCOVER_API_TOKEN}`,
           "content-type": "application/json",
         },
         body: JSON.stringify({ query, variables }),

@@ -101,9 +101,9 @@ acceptance_criteria:
     status: PASS
     verification: "6 builder functions in HardcoverQueries namespace, 6 dedicated tests"
   - id: 7
-    description: 'Authentication header format validated: `authorization: [TOKEN]` (NOT "Bearer TOKEN")'
+    description: 'Authentication header format validated: `authorization: Bearer [TOKEN]` (Bearer prefix required)'
     status: PASS
-    verification: "Test verifies header format, implementation has explicit comment"
+    verification: "Test verifies Bearer token format, implementation properly prefixes with Bearer scheme"
   - id: 8
     description: "All client methods covered by unit tests with >80% coverage"
     status: PASS
