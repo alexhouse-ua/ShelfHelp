@@ -21,9 +21,13 @@ Validate technical feasibility of migrating from Goodreads/Kindle to Hardcover.a
 ```
 Endpoint: https://api.hardcover.app/v1/graphql
 Console: https://cloud.hasura.io/public/graphiql?endpoint=https://api.hardcover.app/v1/graphql
-Auth Header: authorization: [YOUR_API_TOKEN]
+
+Authentication:
+  ✅ Correct:   authorization: [YOUR_API_TOKEN]
+  ❌ Incorrect: authorization: Bearer [YOUR_API_TOKEN]
+
 Token Location: https://hardcover.app/account/api
-Token Format: Plain token (NOT "Bearer TOKEN")
+Token Format: Plain API token (NO "Bearer" prefix - Hardcover does NOT use standard OAuth)
 ```
 
 ### Rate Limits & Constraints
@@ -580,6 +584,16 @@ interface CacheConfig {
 }
 ```
 
+**Cache Key Generation:**
+
+- **Implementation**: Simple hash algorithm (djb2-style bitwise hashing)
+- **Formula**: `hash(query_string + JSON.stringify(variables))`
+- **Performance**: O(n) where n = query+variables string length, typically <1ms
+- **Collision Rate**: Acceptable for API caching (cached entries invalidate after TTL anyway)
+- **Rationale**: Fast, no external dependencies, sufficient for this use case
+- **Future Optimization**: Can migrate to `crypto.subtle.digest('SHA-256')` if scale increases
+- **Note**: NOT a cryptographic hash (security-irrelevant use case), only for caching deduplication
+
 ---
 
 ### Rate Limit Error Handling
@@ -595,6 +609,7 @@ async function callHardcoverAPI<T>(
       const response = await fetch("https://api.hardcover.app/v1/graphql", {
         method: "POST",
         headers: {
+          // ✅ Plain token - NO "Bearer" prefix (Hardcover does NOT use standard OAuth)
           "authorization": process.env.HARDCOVER_API_TOKEN,
           "content-type": "application/json",
         },

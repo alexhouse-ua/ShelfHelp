@@ -45,8 +45,9 @@
 
 - **Endpoint:** `https://api.hardcover.app/v1/graphql`
 - **Method:** `POST` (GraphQL over HTTP)
-- **Authentication:** Bearer token in `authorization` header (NOT "Bearer TOKEN" format)
-  - Header format: `authorization: [TOKEN_VALUE]`
+- **Authentication:** Plain token in `authorization` header (NO "Bearer" prefix)
+  - ✅ **Correct format:** `authorization: [TOKEN_VALUE]`
+  - ❌ **Incorrect format:** `authorization: Bearer [TOKEN_VALUE]` (Hardcover does NOT use Bearer prefix)
   - Token location: https://hardcover.app/account/api
   - Environment variable: `HARDCOVER_API_TOKEN`
   - Token expiry: January 1st annually (auto-reset)
@@ -92,15 +93,25 @@ interface CacheConfig {
 }
 ```
 
+**Cache Key Generation:**
+
+- Implementation: Simple hash algorithm (djb2-style) sufficient for this use case
+- Approach: Combines GraphQL query string + JSON stringified variables into stable cache key
+- Formula: `hash(query + JSON.stringify(variables))`
+- Rationale: Fast generation, no external dependencies, acceptable collision rate for API caching
+- Future optimization: Can migrate to `crypto.subtle.digest('SHA-256', ...)` if needed for larger scale
+
 **Rate Limit Handling:**
 
 ```typescript
 // Exponential backoff on 429: 2s, 4s, 8s (3 attempts)
+// CRITICAL: No "Bearer" prefix in authorization header
 async function callHardcoverAPI<T>(query: string, variables: any, retries = 3): Promise<T> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     const response = await fetch("https://api.hardcover.app/v1/graphql", {
       method: "POST",
       headers: {
+        // ✅ Plain token (NO "Bearer" prefix) - This is NOT a standard OAuth bearer token
         "authorization": process.env.HARDCOVER_API_TOKEN,
         "content-type": "application/json",
       },
