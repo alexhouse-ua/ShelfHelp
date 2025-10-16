@@ -406,17 +406,20 @@ class ActivityIngester {
     private hardcoverClient: HardcoverClient,
     private logger: ReturnType<typeof createLogger>,
     private dryRunManager: DryRunManager,
+    private bookMatcher: BookMatcher,
   ) {}
 
   async ingestActivities(userId: string): Promise<{
     imported: number;
     skipped: number;
     errors: string[];
+    activitiesByBook: Map<string, ActivityRecord[]>;
   }> {
     const startTime = Date.now();
     let imported = 0;
     let skipped = 0;
     const errors: string[] = [];
+    const activitiesByBook = new Map<string, ActivityRecord[]>();
 
     try {
       // Fetch complete activities history
@@ -446,8 +449,18 @@ class ActivityIngester {
           // Parse activity data
           const { activity_type, metadata } = this.parseActivityType(activity);
 
-          // TODO: Get book_id from book matching (stubbed for now)
-          const bookId = crypto.randomUUID(); // Replace with actual book matching
+          // Match book to get book_id from Hardcover book_id
+          const bookId = await this.getOrCreateBookId(activity.book_id);
+          if (!bookId) {
+            this.logger.warn("Book match failed, skipping activity", {
+              operation: "activity_skip",
+              reason: "book_match_failed",
+              activity_id: activity.id,
+              hardcover_book_id: activity.book_id,
+            });
+            skipped++;
+            continue;
+          }
 
           // Insert activity
           const activityRecord: ActivityRecord = {
@@ -461,6 +474,12 @@ class ActivityIngester {
 
           await this.dryRunManager.insertActivity(activityRecord);
           imported++;
+
+          // Track activity for session calculation
+          if (!activitiesByBook.has(bookId)) {
+            activitiesByBook.set(bookId, []);
+          }
+          activitiesByBook.get(bookId)!.push(activityRecord);
         } catch (error) {
           const errorMsg = `Failed to process activity ${activity.id}: ${
             error instanceof Error ? error.message : String(error)
@@ -483,7 +502,7 @@ class ActivityIngester {
         duration_ms: durationMs,
       });
 
-      return { imported, skipped, errors };
+      return { imported, skipped, errors, activitiesByBook };
     } catch (error) {
       const errorMsg = `Activity ingestion failed: ${
         error instanceof Error ? error.message : String(error)
@@ -493,7 +512,7 @@ class ActivityIngester {
         error: errorMsg,
       });
       errors.push(errorMsg);
-      return { imported, skipped, errors };
+      return { imported, skipped, errors, activitiesByBook };
     }
   }
 
@@ -506,6 +525,72 @@ class ActivityIngester {
       .single();
 
     return !error && !!data;
+  }
+
+  /**
+   * Get or create book ID by looking up existing book with hardcover_id
+   * If not found, fetch book from Hardcover API and create new record
+   */
+  private async getOrCreateBookId(hardcoverBookId: number): Promise<string | null> {
+    // Check if book exists with this hardcover_id
+    const { data: existingBook, error: lookupError } = await supabase
+      .from("books")
+      .select("id")
+      .eq("hardcover_id", hardcoverBookId)
+      .limit(1)
+      .single();
+
+    if (!lookupError && existingBook) {
+      return existingBook.id;
+    }
+
+    // Book doesn't exist, fetch from Hardcover API and create
+    try {
+      const bookData = await this.hardcoverClient.fetchBook(hardcoverBookId);
+
+      // Create new book record
+      const { data: newBook, error: insertError } = await supabase
+        .from("books")
+        .insert({
+          hardcover_id: hardcoverBookId,
+          title: bookData.title,
+          author: bookData.author || bookData.contributors?.[0]?.name || "Unknown",
+          isbn: bookData.isbn_13 || bookData.isbn_10,
+          isbn_13: bookData.isbn_13,
+          isbn_10: bookData.isbn_10,
+          description: bookData.description,
+          page_count: bookData.pages,
+          publication_year: bookData.release_year,
+          cover_image_url: bookData.image,
+          data_source: "hardcover",
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !newBook) {
+        this.logger.error("Failed to create book record", {
+          operation: "book_create_error",
+          hardcover_book_id: hardcoverBookId,
+          error: insertError?.message,
+        });
+        return null;
+      }
+
+      this.logger.info("Created new book record", {
+        operation: "book_create",
+        book_id: newBook.id,
+        hardcover_book_id: hardcoverBookId,
+      });
+
+      return newBook.id;
+    } catch (error) {
+      this.logger.error("Failed to fetch book from Hardcover", {
+        operation: "hardcover_fetch_error",
+        hardcover_book_id: hardcoverBookId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
   }
 
   private parseActivityType(activity: HardcoverActivity): {
@@ -663,9 +748,14 @@ async function performSync(
     // Initialize components
     const hardcoverClient = new HardcoverClient(HARDCOVER_API_TOKEN);
     const dryRunManager = new DryRunManager(request.dry_run || false, logger);
-    const _bookMatcher = new BookMatcher(logger, dryRunManager);
-    const activityIngester = new ActivityIngester(hardcoverClient, logger, dryRunManager);
-    const _sessionCalculator = new SessionCalculator(logger, dryRunManager);
+    const bookMatcher = new BookMatcher(logger, dryRunManager);
+    const activityIngester = new ActivityIngester(
+      hardcoverClient,
+      logger,
+      dryRunManager,
+      bookMatcher,
+    );
+    const sessionCalculator = new SessionCalculator(logger, dryRunManager);
 
     logger.info("Sync started", {
       operation: "sync_start",
@@ -685,6 +775,24 @@ async function performSync(
       const ingestResult = await activityIngester.ingestActivities(user.id);
       result.activities_imported = ingestResult.imported;
       result.errors.push(...ingestResult.errors);
+
+      // Calculate reading sessions from activities
+      for (const [bookId, activities] of ingestResult.activitiesByBook.entries()) {
+        try {
+          const sessionsCreated = await sessionCalculator.calculateSessions(bookId, activities);
+          result.sessions_created += sessionsCreated;
+        } catch (error) {
+          const errorMsg = `Session calculation failed for book ${bookId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`;
+          logger.error("Session calculation error", {
+            operation: "session_calc_error",
+            book_id: bookId,
+            error: errorMsg,
+          });
+          result.errors.push(errorMsg);
+        }
+      }
     }
 
     // TODO: Implement lists sync for sync_type === "lists"
@@ -693,7 +801,6 @@ async function performSync(
 
     logger.info("Sync complete", {
       operation: "sync_complete",
-      sync_type: request.sync_type,
       ...result,
     });
 
@@ -749,8 +856,29 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Extract user ID from Authorization header
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Missing or invalid Authorization header" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify JWT and extract user ID
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = user.id;
+
     // Rate limiting
-    const userId = "default"; // TODO: Extract from auth header when implemented
     if (!acquireSyncLock(userId)) {
       return new Response(
         JSON.stringify({
