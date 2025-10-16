@@ -141,7 +141,7 @@ ALTER TABLE books ADD COLUMN physical_format TEXT;
 
 ### User (BEFORE DEV)
 
-1. ⏳ Obtain Hardcover API token: https://hardcover.app/account/api
+1. ⏳ Obtain Hardcover API token: [https://hardcover.app/account/api](https://hardcover.app/account/api)
 2. ⏳ Confirm KOReader plugin active (check Hardcover profile)
 3. ⏳ Final approval of this proposal
 

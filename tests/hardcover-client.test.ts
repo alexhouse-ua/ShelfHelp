@@ -3,7 +3,7 @@
  * Tests rate limiting, caching, error handling, query builders, and public methods
  */
 
-import { assertEquals, assertExists, assertRejects } from "jsr:@std/assert";
+import { assertEquals, assertExists, assertRejects } from "jsr:@std/assert@^1";
 import {
   HardcoverClient,
   HardcoverQueries,
