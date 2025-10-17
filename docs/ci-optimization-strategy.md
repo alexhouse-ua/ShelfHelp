@@ -9,6 +9,7 @@
 ## Problem Statement
 
 CI was taking ~8 minutes per commit due to:
+
 - Supabase Docker startup: ~3-4 min
 - Integration tests with external APIs: ~2-3 min
 - Docker cache management: ~1-2 min
@@ -23,16 +24,19 @@ CI was taking ~8 minutes per commit due to:
 ### Strategy Overview
 
 **Pull Requests:** Fast feedback loop (~2-3 min)
+
 - ✅ Lint & format checks
 - ✅ Unit tests only (no external dependencies)
 - ❌ Integration tests skipped
 
 **Main Branch:** Full validation (~6-8 min)
+
 - ✅ All lint & format checks
 - ✅ Full unit test suite
 - ✅ Complete integration test suite (Supabase + external APIs)
 
 **Manual Trigger:** On-demand full suite
+
 - Available via GitHub Actions UI
 - Can run on any branch for pre-merge validation
 
@@ -45,6 +49,7 @@ CI was taking ~8 minutes per commit due to:
 **File:** `.github/workflows/ci.yml`
 
 **Jobs:**
+
 1. `lint-and-format` - Runs on all commits (~30s)
 2. `unit-tests` - Runs on all commits (~1-2 min)
 3. `integration-tests` - **Conditional execution**
@@ -57,6 +62,7 @@ CI was taking ~8 minutes per commit due to:
 **File:** `.github/workflows/pr-comment.yml`
 
 Automatically posts informative comment on PRs explaining:
+
 - What tests are running
 - How to trigger full suite manually
 - Local testing recommendations
@@ -65,11 +71,11 @@ Automatically posts informative comment on PRs explaining:
 
 ## Performance Metrics
 
-| Scenario | Before | After | Savings |
-|----------|--------|-------|---------|
-| PR commit (typical) | ~8 min | ~2-3 min | **62-70%** |
-| Main branch merge | ~8 min | ~8 min | Same (full tests) |
-| Manual full test | N/A | ~8 min | On-demand |
+| Scenario            | Before | After    | Savings           |
+| ------------------- | ------ | -------- | ----------------- |
+| PR commit (typical) | ~8 min | ~2-3 min | **62-70%**        |
+| Main branch merge   | ~8 min | ~8 min   | Same (full tests) |
+| Manual full test    | N/A    | ~8 min   | On-demand         |
 
 ---
 
@@ -104,6 +110,7 @@ Automatically posts informative comment on PRs explaining:
 ## Developer Workflow
 
 ### Standard PR Workflow
+
 ```bash
 # 1. Make changes
 git checkout -b feature/my-feature
@@ -118,6 +125,7 @@ git push
 ```
 
 ### Pre-Review Full Testing
+
 ```bash
 # Option A: Local testing (recommended)
 supabase start
@@ -150,6 +158,7 @@ deno test -A
 ### Rollback Plan
 
 If quality issues arise:
+
 1. Update `ci.yml` to restore integration tests on PR
 2. Keep optimizations (caching, parallelization)
 3. Re-evaluate strategy based on data
@@ -159,16 +168,19 @@ If quality issues arise:
 ## Future Optimizations
 
 ### Short-term (Next Sprint)
+
 - [ ] Add "critical path" integration tests to PR (< 1 min subset)
 - [ ] Optimize Supabase Docker startup with pre-built image
 - [ ] Implement test result caching
 
 ### Medium-term (Next Quarter)
+
 - [ ] Migrate to GitHub Actions larger runners for integration tests
 - [ ] Implement smart test selection (only affected tests)
 - [ ] Add parallel integration test execution
 
 ### Long-term (6+ months)
+
 - [ ] Evaluate cloud-based Supabase test instance (no Docker startup)
 - [ ] Implement mutation testing for critical paths
 - [ ] Add visual regression testing to separate workflow

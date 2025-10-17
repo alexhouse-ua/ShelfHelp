@@ -28,15 +28,15 @@ top_issues:
 waiver:
   active: false
 
-quality_score: 90  # 100 - (10×1 minor concern)
+quality_score: 90 # 100 - (10×1 minor concern)
 expires: "2025-10-30T14:00:00Z"
 
 evidence:
-  tests_reviewed: 16  # All passing
-  risks_identified: 3  # All low severity
+  tests_reviewed: 16 # All passing
+  risks_identified: 3 # All low severity
   trace:
-    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # All ACs implemented
-    ac_gaps: []  # No gaps
+    ac_covered: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] # All ACs implemented
+    ac_gaps: [] # No gaps
 
 nfr_validation:
   security:
@@ -56,9 +56,9 @@ nfr_validation:
     notes: "Clean class separation. TSDoc comments. Structured logging. Code passes deno fmt/lint. Well-documented implementation."
 
 recommendations:
-  immediate: []  # No blocking issues
+  immediate: [] # No blocking issues
 
-  future:  # Optional enhancements for future stories
+  future: # Optional enhancements for future stories
     - action: "Consider enhancing tests with mocked Supabase/Hardcover clients for true integration testing"
       refs: ["tests/hardcover-sync.test.ts"]
 
