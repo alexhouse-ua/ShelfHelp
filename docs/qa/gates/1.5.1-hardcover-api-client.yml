@@ -101,7 +101,7 @@ acceptance_criteria:
     status: PASS
     verification: "6 builder functions in HardcoverQueries namespace, 6 dedicated tests"
   - id: 7
-    description: "Authentication header format validated: `authorization: Bearer [TOKEN]` (Bearer prefix required)"
+    description: 'Authentication header format validated: `authorization: Bearer [TOKEN]` (Bearer prefix required)'
     status: PASS
     verification: "Test verifies Bearer token format, implementation properly prefixes with Bearer scheme"
   - id: 8
