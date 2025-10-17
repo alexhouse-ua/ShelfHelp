@@ -1,4 +1,4 @@
-import { assertEquals, assertExists } from "jsr:@std/assert";
+import { assertEquals, assertExists } from "jsr:@std/assert@1";
 
 // ============================================================================
 // TEST: ISBN Match (Confidence 1.0)
